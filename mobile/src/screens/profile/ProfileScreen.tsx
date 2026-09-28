@@ -1,4 +1,5 @@
 // mobile/src/screens/profile/ProfileScreen.tsx
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -100,7 +101,8 @@ export default function ProfileScreen({ navigation }: Props) {
       </TouchableOpacity>
 
       <TouchableOpacity style={s.settingsLink} onPress={() => navigation.navigate('Settings')}>
-        <Text style={s.settingsLinkText}>⚙ Ajustes</Text>
+        <Ionicons name="settings-outline" size={18} color="#888" />
+        <Text style={s.settingsLinkText}>Ajustes</Text>
       </TouchableOpacity>
 
     </ScrollView>
@@ -117,6 +119,6 @@ const s = StyleSheet.create({
   error: { color: '#e74c3c', fontSize: 13, marginTop: 8 },
   saveBtn: { backgroundColor: '#1db954', borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 24 },
   saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
-  settingsLink: { alignItems: 'center', marginTop: 20, marginBottom: 40 },
+  settingsLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20, marginBottom: 40 },
   settingsLinkText: { color: '#888', fontSize: 15 },
 });

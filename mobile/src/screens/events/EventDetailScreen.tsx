@@ -1,6 +1,7 @@
 // mobile/src/screens/events/EventDetailScreen.tsx
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { Alert, FlatList, RefreshControl, StyleSheet, TouchableOpacity, Text, View } from 'react-native';
 import { io, Socket } from 'socket.io-client';
 import NowPlayingBar from '../../components/NowPlayingBar';
@@ -182,13 +183,13 @@ export default function EventDetailScreen({ route }: Props) {
           </View>
           <View style={p.controls}>
             <TouchableOpacity style={p.ctrlBtn} onPress={handlePrevious}>
-              <Text style={p.ctrlText}>⏮</Text>
+              <Ionicons name="play-skip-back" size={24} color="#fff" />
             </TouchableOpacity>
             <TouchableOpacity style={p.playBtn} onPress={handlePlayPause}>
-              <Text style={p.playText}>{player.isPlaying ? '⏸' : '▶'}</Text>
+              <Ionicons name={player.isPlaying ? 'pause' : 'play'} size={22} color="#fff" />
             </TouchableOpacity>
             <TouchableOpacity style={p.ctrlBtn} onPress={handleNext}>
-              <Text style={p.ctrlText}>⏭</Text>
+              <Ionicons name="play-skip-forward" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -243,9 +244,7 @@ const p = StyleSheet.create({
   barFill: { height: 4, backgroundColor: '#1db954', borderRadius: 2 },
   controls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 24 },
   ctrlBtn: { padding: 8 },
-  ctrlText: { fontSize: 22, color: '#fff' },
   playBtn: { backgroundColor: '#1db954', borderRadius: 24, width: 48, height: 48, justifyContent: 'center', alignItems: 'center' },
-  playText: { fontSize: 20, color: '#fff' },
 });
 const st = StyleSheet.create({
   empty: { color: '#888', textAlign: 'center', marginTop: 40, fontSize: 15 },

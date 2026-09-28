@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, RefreshControl, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -100,7 +101,7 @@ export default function EventsListScreen({ navigation }: Props) {
               </TouchableOpacity>
               {ev.ownerId === user?.id && (
                 <TouchableOpacity onPress={() => handleDeleteEvent(ev.id)} style={{ padding: 6, justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 16 }}>🗑</Text>
+                  <Ionicons name="trash-outline" size={18} color="#e74c3c" />
                 </TouchableOpacity>
               )}
             </View>

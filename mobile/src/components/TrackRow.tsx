@@ -1,4 +1,5 @@
 // mobile/src/components/TrackRow.tsx
+import { Ionicons } from '@expo/vector-icons';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface Props {
@@ -34,7 +35,7 @@ export default function TrackRow({ id, trackName, artist, albumArt, votes, userV
       </TouchableOpacity>
       {canDelete && onDelete && (
         <TouchableOpacity style={s.deleteBtn} onPress={() => onDelete(id)}>
-          <Text style={s.deleteText}>🗑</Text>
+          <Ionicons name="trash-outline" size={18} color="#e74c3c" />
         </TouchableOpacity>
       )}
     </View>
@@ -53,5 +54,4 @@ const s = StyleSheet.create({
   voteText: { color: '#aaa', fontSize: 13, fontWeight: 'bold' },
   votedText: { color: '#fff' },
   deleteBtn: { padding: 6 },
-  deleteText: { fontSize: 16 },
 });

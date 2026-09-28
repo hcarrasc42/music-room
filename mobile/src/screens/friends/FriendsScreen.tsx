@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { apiFetch } from '../../api/client';
 
 interface Friendship {
@@ -119,10 +120,10 @@ export default function FriendsScreen() {
               <Text style={s.cardText}>{r.userId}</Text>
               <View style={s.actions}>
                 <TouchableOpacity style={s.acceptBtn} onPress={() => handleAccept(r.id)}>
-                  <Text style={s.acceptText}>✓</Text>
+                  <Ionicons name="checkmark" size={16} color="#fff" />
                 </TouchableOpacity>
                 <TouchableOpacity style={s.rejectBtn} onPress={() => handleRemove(r.id)}>
-                  <Text style={s.rejectText}>✕</Text>
+                  <Ionicons name="close" size={16} color="#aaa" />
                 </TouchableOpacity>
               </View>
             </View>

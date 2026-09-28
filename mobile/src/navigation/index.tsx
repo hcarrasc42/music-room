@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../state/auth';
 
@@ -78,10 +79,14 @@ function MainTabs() {
       tabBarActiveTintColor: '#1db954',
       tabBarInactiveTintColor: '#888',
     }}>
-      <Tabs.Screen name="Eventos" component={EventsNavigator} />
-      <Tabs.Screen name="Buscar" component={SearchNavigator} />
-      <Tabs.Screen name="Amigos" component={FriendsScreen} />
-      <Tabs.Screen name="Perfil" component={ProfileNavigator} />
+      <Tabs.Screen name="Eventos" component={EventsNavigator}
+        options={{ tabBarIcon: ({ color, size }) => <Ionicons name="musical-notes-outline" size={size} color={color} /> }} />
+      <Tabs.Screen name="Buscar" component={SearchNavigator}
+        options={{ tabBarIcon: ({ color, size }) => <Ionicons name="search-outline" size={size} color={color} /> }} />
+      <Tabs.Screen name="Amigos" component={FriendsScreen}
+        options={{ tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />, headerShown: true, headerStyle: { backgroundColor: '#121212' }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: 'bold' } }} />
+      <Tabs.Screen name="Perfil" component={ProfileNavigator}
+        options={{ tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} /> }} />
     </Tabs.Navigator>
   );
 }

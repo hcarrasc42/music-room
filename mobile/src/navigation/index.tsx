@@ -72,7 +72,12 @@ function ProfileNavigator() {
 
 function MainTabs() {
   return (
-    <Tabs.Navigator screenOptions={{ headerShown: false }}>
+    <Tabs.Navigator screenOptions={{
+      headerShown: false,
+      tabBarStyle: { backgroundColor: '#121212', borderTopColor: '#222' },
+      tabBarActiveTintColor: '#1db954',
+      tabBarInactiveTintColor: '#888',
+    }}>
       <Tabs.Screen name="Eventos" component={EventsNavigator} />
       <Tabs.Screen name="Buscar" component={SearchNavigator} />
       <Tabs.Screen name="Amigos" component={FriendsScreen} />

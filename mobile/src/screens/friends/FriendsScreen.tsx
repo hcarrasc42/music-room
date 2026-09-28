@@ -23,6 +23,7 @@ export default function FriendsScreen() {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState('');
   const [addingId, setAddingId] = useState('');
+  const [actionError, setActionError] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -70,13 +71,21 @@ export default function FriendsScreen() {
   };
 
   const handleAccept = async (id: string) => {
-    await apiFetch(`/friends/${id}/accept`, { method: 'PUT' });
-    load();
+    try {
+      await apiFetch(`/friends/${id}/accept`, { method: 'PUT' });
+      load();
+    } catch {
+      setActionError('No se pudo aceptar la solicitud');
+    }
   };
 
   const handleRemove = async (id: string) => {
-    await apiFetch(`/friends/${id}`, { method: 'DELETE' });
-    load();
+    try {
+      await apiFetch(`/friends/${id}`, { method: 'DELETE' });
+      load();
+    } catch {
+      setActionError('No se pudo completar la acción');
+    }
   };
 
   if (loading) return <View style={s.center}><ActivityIndicator color="#1db954" /></View>;
@@ -120,6 +129,8 @@ export default function FriendsScreen() {
           ))}
         </>
       )}
+
+      {actionError ? <Text style={s.error}>{actionError}</Text> : null}
 
       <Text style={s.section}>Mis amigos</Text>
       {friends.length === 0 && <Text style={s.empty}>Aún no tienes amigos.</Text>}

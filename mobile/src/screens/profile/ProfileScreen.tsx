@@ -27,6 +27,7 @@ export default function ProfileScreen({ navigation }: Props) {
   const [form, setForm] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -43,9 +44,12 @@ export default function ProfileScreen({ navigation }: Props) {
   const handleSave = async () => {
     if (!form) return;
     setSaving(true);
+    setSaveError('');
     try {
       await apiFetch('/users/me', { method: 'PUT', body: JSON.stringify(form) });
       setProfile(form);
+    } catch {
+      setSaveError('No se pudo guardar el perfil');
     } finally {
       setSaving(false);
     }
@@ -89,6 +93,8 @@ export default function ProfileScreen({ navigation }: Props) {
       <TextInput style={s.input} value={form.favoriteArtists ?? ''} onChangeText={v => setForm({ ...form, favoriteArtists: v })}
         placeholder="The Beatles, Dua Lipa..." placeholderTextColor="#888" />
 
+      {saveError ? <Text style={s.error}>{saveError}</Text> : null}
+
       <TouchableOpacity style={s.saveBtn} onPress={handleSave} disabled={saving}>
         {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.saveBtnText}>Guardar</Text>}
       </TouchableOpacity>
@@ -108,6 +114,7 @@ const s = StyleSheet.create({
   input: { backgroundColor: '#1e1e1e', color: '#fff', borderRadius: 8, padding: 12, fontSize: 15, borderWidth: 1, borderColor: '#333' },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   vis: { fontSize: 20, padding: 4 },
+  error: { color: '#e74c3c', fontSize: 13, marginTop: 8 },
   saveBtn: { backgroundColor: '#1db954', borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 24 },
   saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
   settingsLink: { alignItems: 'center', marginTop: 20, marginBottom: 40 },

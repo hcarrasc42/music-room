@@ -11,6 +11,30 @@ WebBrowser.maybeCompleteAuthSession();
 
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? '';
 
+// Separate component so the hook is always called unconditionally within it.
+// LoginScreen only renders this when GOOGLE_CLIENT_ID is set, avoiding the
+// "iosClientId must be defined" crash on iOS when Google auth isn't configured.
+function GoogleLoginButton({ onToken, disabled }: { onToken: (t: string) => void; disabled: boolean }) {
+  const [, response, promptAsync] = Google.useAuthRequest({
+    webClientId: GOOGLE_CLIENT_ID,
+    iosClientId: GOOGLE_CLIENT_ID,
+    androidClientId: GOOGLE_CLIENT_ID,
+  });
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const idToken = response.params?.id_token;
+      if (idToken) onToken(idToken);
+    }
+  }, [response, onToken]);
+
+  return (
+    <TouchableOpacity style={s.googleBtn} onPress={() => promptAsync()} disabled={disabled}>
+      <Text style={s.googleText}>G  Continuar con Google</Text>
+    </TouchableOpacity>
+  );
+}
+
 type Props = NativeStackScreenProps<AuthStackParams, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
@@ -19,15 +43,6 @@ export default function LoginScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login, loginGoogle } = useAuth();
-
-  const [, response, promptAsync] = Google.useAuthRequest({ webClientId: GOOGLE_CLIENT_ID });
-
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const idToken = response.params.id_token;
-      if (idToken) handleGoogleToken(idToken);
-    }
-  }, [response]);
 
   const handleGoogleToken = async (idToken: string) => {
     setLoading(true);
@@ -70,11 +85,12 @@ export default function LoginScreen({ navigation }: Props) {
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Iniciar sesión</Text>}
       </TouchableOpacity>
 
-      <Text style={s.divider}>— o continuar con —</Text>
-
-      <TouchableOpacity style={s.googleBtn} onPress={() => promptAsync()} disabled={loading || !GOOGLE_CLIENT_ID}>
-        <Text style={s.googleText}>G  Continuar con Google</Text>
-      </TouchableOpacity>
+      {GOOGLE_CLIENT_ID ? (
+        <>
+          <Text style={s.divider}>— o continuar con —</Text>
+          <GoogleLoginButton onToken={handleGoogleToken} disabled={loading} />
+        </>
+      ) : null}
 
       <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
         <Text style={s.link}>¿Olvidaste tu contraseña?</Text>

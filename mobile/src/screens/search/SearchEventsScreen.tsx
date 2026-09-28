@@ -17,11 +17,15 @@ export default function SearchEventsScreen({ navigation }: Props) {
   const [allEvents, setAllEvents] = useState<MusicEvent[]>([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   const load = useCallback(async () => {
+    setLoadError('');
     try {
       const data = await apiFetch<MusicEvent[]>('/events');
       setAllEvents(data ?? []);
+    } catch {
+      setLoadError('No se pudieron cargar los eventos');
     } finally {
       setLoading(false);
     }
@@ -46,6 +50,14 @@ export default function SearchEventsScreen({ navigation }: Props) {
         value={query}
         onChangeText={setQuery}
       />
+      {loadError ? (
+        <View style={s.errorContainer}>
+          <Text style={s.errorText}>{loadError}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={load}>
+            <Text style={s.retryText}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
       <FlatList
         data={filtered}
         keyExtractor={e => e.id}
@@ -73,4 +85,8 @@ const s = StyleSheet.create({
   name: { color: '#fff', fontSize: 15, fontWeight: '600' },
   badge: { color: '#888', fontSize: 13 },
   empty: { color: '#888', textAlign: 'center', marginTop: 40 },
+  errorContainer: { alignItems: 'center', padding: 20 },
+  errorText: { color: '#e74c3c', fontSize: 14, marginBottom: 12 },
+  retryBtn: { backgroundColor: '#1db954', borderRadius: 8, paddingHorizontal: 20, paddingVertical: 10 },
+  retryText: { color: '#fff', fontWeight: 'bold' },
 });

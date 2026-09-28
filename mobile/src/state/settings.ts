@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
 const STORAGE_KEY = 'settings.backendUrl';
-const DEFAULT_URL = 'http://localhost:3000';
+const DEFAULT_URL = 'http://10.13.8.4:3000';
 
 interface SettingsState {
   backendUrl: string;

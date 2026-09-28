@@ -1,0 +1,68 @@
+<h2>¿Cómo organizamos la navegación de la app?</h2>
+<p class="subtitle">Una vez logueado, ¿cuál es la estructura principal?</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1a2e;padding:16px;font-family:monospace;font-size:13px;color:#eee;border-radius:8px">
+      <div style="background:#16213e;border-radius:6px;padding:10px;margin-bottom:8px">
+        <div style="color:#e94560;font-weight:bold;margin-bottom:6px">🎵 Eventos</div>
+        <div style="background:#0f3460;border-radius:4px;padding:8px;margin-bottom:4px;font-size:11px">Evento: Noche 80s → Cola de votos</div>
+        <div style="background:#0f3460;border-radius:4px;padding:8px;font-size:11px">Evento: Gym Mix → Cola de votos</div>
+      </div>
+      <div style="display:flex;gap:4px;justify-content:space-around;background:#16213e;border-radius:6px;padding:8px;font-size:11px">
+        <span style="color:#e94560">🎵 Eventos</span>
+        <span style="color:#888">🔍 Buscar</span>
+        <span style="color:#888">👥 Amigos</span>
+        <span style="color:#888">👤 Perfil</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — 4 tabs</h3>
+      <p>Eventos · Buscar Spotify · Amigos · Perfil<br>Navegación rápida, todo visible</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1a2e;padding:16px;font-family:monospace;font-size:13px;color:#eee;border-radius:8px">
+      <div style="background:#16213e;border-radius:6px;padding:10px;margin-bottom:8px">
+        <div style="color:#e94560;font-weight:bold;margin-bottom:6px">🎵 Eventos</div>
+        <div style="background:#0f3460;border-radius:4px;padding:8px;margin-bottom:4px;font-size:11px">Evento: Noche 80s → Cola de votos</div>
+        <div style="background:#0f3460;border-radius:4px;padding:8px;font-size:11px">Evento: Gym Mix → Cola de votos</div>
+      </div>
+      <div style="display:flex;gap:4px;justify-content:space-around;background:#16213e;border-radius:6px;padding:8px;font-size:11px">
+        <span style="color:#e94560">🏠 Inicio</span>
+        <span style="color:#888">👥 Social</span>
+        <span style="color:#888">👤 Yo</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — 3 tabs</h3>
+      <p>Inicio (eventos) · Social (amigos+búsqueda) · Yo (perfil+ajustes)<br>Más limpio, menos tabs</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1a2e;padding:16px;font-family:monospace;font-size:13px;color:#eee;border-radius:8px">
+      <div style="display:flex;gap:8px">
+        <div style="background:#16213e;border-radius:6px;padding:8px;width:35%;font-size:11px">
+          <div style="color:#e94560;margin-bottom:4px">≡ Menu</div>
+          <div style="color:#aaa;margin-bottom:2px">🎵 Eventos</div>
+          <div style="color:#aaa;margin-bottom:2px">👥 Amigos</div>
+          <div style="color:#aaa;margin-bottom:2px">👤 Perfil</div>
+          <div style="color:#aaa">⚙️ Config</div>
+        </div>
+        <div style="background:#16213e;border-radius:6px;padding:8px;flex:1;font-size:11px">
+          <div style="color:#e94560;margin-bottom:4px">Mis Eventos</div>
+          <div style="background:#0f3460;border-radius:4px;padding:6px;margin-bottom:4px">Noche 80s</div>
+          <div style="background:#0f3460;border-radius:4px;padding:6px">Gym Mix</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Drawer lateral</h3>
+      <p>Menú deslizable con todas las secciones<br>Más espacio en pantalla, menos intuitivo</p>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,81 @@
+<h2>¿Cómo se ve la pantalla de un evento (la cola de votación)?</h2>
+<p class="subtitle">Esta es la pantalla que más usarán los usuarios</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#121212;padding:0;border-radius:8px;overflow:hidden;font-family:sans-serif">
+      <!-- Now playing bar -->
+      <div style="background:#1db954;padding:10px 12px;display:flex;align-items:center;gap:8px">
+        <div style="width:36px;height:36px;background:#0d8c3c;border-radius:4px;flex-shrink:0"></div>
+        <div style="flex:1">
+          <div style="color:#fff;font-size:11px;font-weight:bold">▶ Sonando: Blinding Lights</div>
+          <div style="color:#d4f5de;font-size:10px">The Weeknd</div>
+        </div>
+      </div>
+      <!-- Queue list -->
+      <div style="padding:8px 12px">
+        <div style="color:#aaa;font-size:10px;margin-bottom:6px">SIGUIENTE (por votos)</div>
+        <div style="background:#1e1e1e;border-radius:6px;padding:8px;margin-bottom:4px;display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;background:#282828;border-radius:3px;flex-shrink:0"></div>
+          <div style="flex:1"><div style="color:#fff;font-size:10px">Levitating</div><div style="color:#888;font-size:9px">Dua Lipa</div></div>
+          <div style="background:#1db954;border-radius:12px;padding:2px 8px;font-size:10px;color:#fff">▲ 12</div>
+        </div>
+        <div style="background:#1e1e1e;border-radius:6px;padding:8px;margin-bottom:4px;display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;background:#282828;border-radius:3px;flex-shrink:0"></div>
+          <div style="flex:1"><div style="color:#fff;font-size:10px">As It Was</div><div style="color:#888;font-size:9px">Harry Styles</div></div>
+          <div style="background:#333;border-radius:12px;padding:2px 8px;font-size:10px;color:#aaa">▲ 7</div>
+        </div>
+        <div style="background:#1e1e1e;border-radius:6px;padding:8px;display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;background:#282828;border-radius:3px;flex-shrink:0"></div>
+          <div style="flex:1"><div style="color:#fff;font-size:10px">Heat Waves</div><div style="color:#888;font-size:9px">Glass Animals</div></div>
+          <div style="background:#333;border-radius:12px;padding:2px 8px;font-size:10px;color:#aaa">▲ 3</div>
+        </div>
+      </div>
+      <!-- FAB -->
+      <div style="text-align:right;padding:6px 12px 10px">
+        <span style="background:#1db954;color:#fff;border-radius:20px;padding:6px 14px;font-size:11px;font-weight:bold">+ Sugerir</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Barra "sonando" + lista + FAB</h3>
+      <p>Banner verde con la pista actual arriba, cola ordenada por votos, botón flotante para sugerir</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#121212;padding:0;border-radius:8px;overflow:hidden;font-family:sans-serif">
+      <!-- Header -->
+      <div style="padding:10px 12px;border-bottom:1px solid #333">
+        <div style="color:#fff;font-size:12px;font-weight:bold">🎵 Noche 80s</div>
+        <div style="color:#888;font-size:10px">32 oyentes · Público</div>
+      </div>
+      <!-- Tabs inside event -->
+      <div style="display:flex;border-bottom:1px solid #333">
+        <div style="flex:1;text-align:center;padding:8px;color:#1db954;font-size:11px;border-bottom:2px solid #1db954">Cola</div>
+        <div style="flex:1;text-align:center;padding:8px;color:#888;font-size:11px">Sugerir</div>
+        <div style="flex:1;text-align:center;padding:8px;color:#888;font-size:11px">Info</div>
+      </div>
+      <!-- Queue -->
+      <div style="padding:8px 12px">
+        <div style="background:#1e1e1e;border-radius:6px;padding:8px;margin-bottom:4px;display:flex;align-items:center;gap:8px">
+          <div style="color:#1db954;font-size:14px">▶</div>
+          <div style="flex:1"><div style="color:#fff;font-size:10px">Blinding Lights</div><div style="color:#888;font-size:9px">sonando ahora</div></div>
+        </div>
+        <div style="background:#1e1e1e;border-radius:6px;padding:8px;margin-bottom:4px;display:flex;align-items:center;gap:8px">
+          <div style="color:#1db954;font-size:11px;width:20px;text-align:center">▲12</div>
+          <div style="flex:1"><div style="color:#fff;font-size:10px">Levitating</div><div style="color:#888;font-size:9px">Dua Lipa</div></div>
+        </div>
+        <div style="background:#1e1e1e;border-radius:6px;padding:8px;display:flex;align-items:center;gap:8px">
+          <div style="color:#aaa;font-size:11px;width:20px;text-align:center">▲7</div>
+          <div style="flex:1"><div style="color:#fff;font-size:10px">As It Was</div><div style="color:#888;font-size:9px">Harry Styles</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Tabs dentro del evento</h3>
+      <p>Pestañas internas: Cola / Sugerir / Info. Todo en un sitio, sin FAB flotante</p>
+    </div>
+  </div>
+
+</div>

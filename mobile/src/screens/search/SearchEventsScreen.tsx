@@ -66,7 +66,7 @@ export default function SearchEventsScreen({ navigation }: Props) {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={s.card}
-            onPress={() => navigation.navigate('EventDetail', { eventId: item.id, eventName: item.name })}
+            onPress={() => navigation.navigate('EventDetail', { eventId: item.id, eventName: item.name, ownerId: item.ownerId })}
           >
             <Text style={s.name}>{item.name}</Text>
             <Text style={s.badge}>{item.isPublic ? '🌍 Público' : '🔒 Privado'}</Text>

@@ -2,7 +2,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { Alert, FlatList, RefreshControl, StyleSheet, TouchableOpacity, Text, View } from 'react-native';
+import { Alert, FlatList, PanResponder, RefreshControl, StyleSheet, TouchableOpacity, Text, View } from 'react-native';
 import { io, Socket } from 'socket.io-client';
 import NowPlayingBar from '../../components/NowPlayingBar';
 import SuggestModal from '../../components/SuggestModal';
@@ -38,19 +38,29 @@ function formatMs(ms: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
+const HANDLE_SIZE = 14;
+const TOUCH_AREA_HEIGHT = 28;
+const BAR_HEIGHT = 4;
+
 export default function EventDetailScreen({ route }: Props) {
-  const { eventId } = route.params;
+  const { eventId, ownerId } = route.params;
   const { token, user } = useAuth();
   const { backendUrl } = useSettings();
+  const isOwner = user?.id === ownerId;
 
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [player, setPlayer] = useState<PlayerState | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showSuggest, setShowSuggest] = useState(false);
   const [loadError, setLoadError] = useState('');
-  const [barWidth, setBarWidth] = useState(1);
-  const socketRef = useRef<Socket | null>(null);
+  const [dragX, setDragX] = useState<number | null>(null);
+  const [listScrollEnabled, setListScrollEnabled] = useState(true);
+
+  const socketRef = useRef<Socket | undefined>(undefined);
   const pollRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const barWidthRef = useRef(1);
+  const playerRef = useRef<PlayerState | null>(null);
+  const pollPlayerRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   const loadSuggestions = useCallback(async () => {
     setLoadError('');
@@ -68,22 +78,25 @@ export default function EventDetailScreen({ route }: Props) {
     try {
       const data = await apiFetch<PlayerState | null>('/spotify/player');
       setPlayer(data);
+      playerRef.current = data;
     } catch {
       // silently ignore — Spotify may not be active
     }
   }, []);
 
+  pollPlayerRef.current = pollPlayer;
+
   useEffect(() => {
     loadSuggestions();
     void pollPlayer();
-    pollRef.current = setInterval(() => { void pollPlayer(); }, 2000);
+    pollRef.current = setInterval(() => { void pollPlayerRef.current(); }, 2000);
 
     const socket = io(backendUrl, { auth: { token }, transports: ['websocket'] });
     socketRef.current = socket;
 
     socket.emit('join', { eventId });
     socket.on('queue:updated', () => loadSuggestions());
-    socket.on('queue:empty', () => setPlayer(null));
+    socket.on('queue:empty', () => { setPlayer(null); playerRef.current = null; });
 
     return () => {
       clearInterval(pollRef.current);
@@ -91,6 +104,43 @@ export default function EventDetailScreen({ route }: Props) {
       socket.disconnect();
     };
   }, [eventId, backendUrl, token, loadSuggestions, pollPlayer]);
+
+  // Always-fresh seek function — captured by ref so PanResponder (created once) sees latest state
+  const seekCommitRef = useRef<(x: number) => void>(() => {});
+  seekCommitRef.current = (x: number) => {
+    const p = playerRef.current;
+    if (!p?.durationMs) return;
+    const ratio = Math.max(0, Math.min(1, x / barWidthRef.current));
+    const positionMs = Math.floor(ratio * p.durationMs);
+    apiFetch(`/events/${eventId}/player/seek`, { method: 'POST', body: JSON.stringify({ positionMs }) })
+      .then(() => pollPlayerRef.current())
+      .catch(() => {});
+  };
+
+  // Capture-phase PanResponder: claims gesture before the FlatList can scroll.
+  // setListScrollEnabled(false) ensures FlatList is disabled for the duration of the drag.
+  const seekPan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponderCapture: () => true,
+      onMoveShouldSetPanResponderCapture: () => true,
+      onPanResponderGrant: (e) => {
+        setListScrollEnabled(false);
+        setDragX(Math.max(0, Math.min(barWidthRef.current, e.nativeEvent.locationX)));
+      },
+      onPanResponderMove: (e) => {
+        setDragX(Math.max(0, Math.min(barWidthRef.current, e.nativeEvent.locationX)));
+      },
+      onPanResponderRelease: (e) => {
+        setListScrollEnabled(true);
+        setDragX(null);
+        seekCommitRef.current(e.nativeEvent.locationX);
+      },
+      onPanResponderTerminate: () => {
+        setListScrollEnabled(true);
+        setDragX(null);
+      },
+    })
+  ).current;
 
   const handleVote = async (id: string) => {
     try {
@@ -122,9 +172,9 @@ export default function EventDetailScreen({ route }: Props) {
   const handlePlayPause = async () => {
     try {
       if (player?.isPlaying) {
-        await apiFetch('/spotify/pause', { method: 'POST' });
+        await apiFetch(`/events/${eventId}/player/pause`, { method: 'POST' });
       } else {
-        await apiFetch('/spotify/play', { method: 'POST' });
+        await apiFetch(`/events/${eventId}/player/resume`, { method: 'POST' });
       }
       await pollPlayer();
     } catch {
@@ -134,7 +184,7 @@ export default function EventDetailScreen({ route }: Props) {
 
   const handleNext = async () => {
     try {
-      await apiFetch('/spotify/next', { method: 'POST' });
+      await apiFetch(`/events/${eventId}/player/next`, { method: 'POST' });
       setTimeout(() => { void pollPlayer(); }, 500);
     } catch {
       Alert.alert('Error', 'No se pudo cambiar la canción');
@@ -143,44 +193,45 @@ export default function EventDetailScreen({ route }: Props) {
 
   const handlePrevious = async () => {
     try {
-      await apiFetch('/spotify/previous', { method: 'POST' });
+      await apiFetch(`/events/${eventId}/player/previous`, { method: 'POST' });
       setTimeout(() => { void pollPlayer(); }, 500);
     } catch {
       Alert.alert('Error', 'No se pudo cambiar la canción');
     }
   };
 
-  const handleSeek = (x: number) => {
-    if (!player?.durationMs) return;
-    const ratio = Math.max(0, Math.min(1, x / barWidth));
-    const positionMs = Math.floor(ratio * player.durationMs);
-    apiFetch('/spotify/seek', { method: 'POST', body: JSON.stringify({ positionMs }) })
-      .then(() => pollPlayer())
-      .catch(() => {});
-  };
-
   const progress = player?.durationMs
-    ? Math.floor((player.progressMs / player.durationMs) * barWidth)
+    ? Math.floor((player.progressMs / player.durationMs) * barWidthRef.current)
     : 0;
+  const fillWidth = dragX !== null ? dragX : progress;
+  // Clamp handle so it stays within the bar bounds
+  const handleLeft = Math.max(0, Math.min(fillWidth - HANDLE_SIZE / 2, barWidthRef.current - HANDLE_SIZE));
 
   return (
     <View style={s.container}>
       <NowPlayingBar trackName={player?.trackName ?? null} artist={player?.artist ?? null} />
 
-      {player && (
+      {isOwner && player && (
         <View style={p.container}>
           <View style={p.progressRow}>
             <Text style={p.time}>{formatMs(player.progressMs)}</Text>
-            <TouchableOpacity
-              style={p.barTrack}
-              onLayout={e => setBarWidth(e.nativeEvent.layout.width)}
-              onPress={e => handleSeek(e.nativeEvent.locationX)}
-              activeOpacity={1}
+
+            <View
+              style={p.barTouchArea}
+              onLayout={e => { barWidthRef.current = e.nativeEvent.layout.width; }}
+              {...seekPan.panHandlers}
             >
-              <View style={[p.barFill, { width: progress }]} />
-            </TouchableOpacity>
+              {/* Grey track */}
+              <View style={p.barBg}>
+                <View style={[p.barFill, { width: fillWidth }]} />
+              </View>
+              {/* Draggable circle handle */}
+              <View style={[p.barHandle, { left: handleLeft }]} />
+            </View>
+
             <Text style={p.time}>{formatMs(player.durationMs)}</Text>
           </View>
+
           <View style={p.controls}>
             <TouchableOpacity style={p.ctrlBtn} onPress={handlePrevious}>
               <Ionicons name="play-skip-back" size={24} color="#fff" />
@@ -201,6 +252,7 @@ export default function EventDetailScreen({ route }: Props) {
         data={suggestions}
         keyExtractor={suggestion => suggestion.id}
         contentContainerStyle={{ padding: 12 }}
+        scrollEnabled={listScrollEnabled}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadSuggestions(); }} tintColor="#1db954" />}
         ListEmptyComponent={<Text style={st.empty}>Sin pistas en la cola. ¡Sugiere la primera!</Text>}
         renderItem={({ item }) => (
@@ -237,11 +289,21 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#121212' },
 });
 const p = StyleSheet.create({
-  container: { backgroundColor: '#1a1a1a', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#222' },
-  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  container: { backgroundColor: '#1a1a1a', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#222' },
+  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
   time: { color: '#888', fontSize: 11, minWidth: 32, textAlign: 'center' },
-  barTrack: { flex: 1, height: 4, backgroundColor: '#333', borderRadius: 2, justifyContent: 'center' },
-  barFill: { height: 4, backgroundColor: '#1db954', borderRadius: 2 },
+  barTouchArea: { flex: 1, height: TOUCH_AREA_HEIGHT, justifyContent: 'center' },
+  barBg: { height: BAR_HEIGHT, backgroundColor: '#333', borderRadius: BAR_HEIGHT / 2, overflow: 'hidden' },
+  barFill: { height: BAR_HEIGHT, backgroundColor: '#1db954' },
+  // Absolutely positioned over barTouchArea; top centers the circle vertically
+  barHandle: {
+    position: 'absolute',
+    width: HANDLE_SIZE,
+    height: HANDLE_SIZE,
+    borderRadius: HANDLE_SIZE / 2,
+    backgroundColor: '#1db954',
+    top: (TOUCH_AREA_HEIGHT - HANDLE_SIZE) / 2,
+  },
   controls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 24 },
   ctrlBtn: { padding: 8 },
   playBtn: { backgroundColor: '#1db954', borderRadius: 24, width: 48, height: 48, justifyContent: 'center', alignItems: 'center' },

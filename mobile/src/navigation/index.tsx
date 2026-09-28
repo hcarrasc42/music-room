@@ -25,12 +25,12 @@ export type AuthStackParams = {
 
 export type EventsStackParams = {
   EventsList: undefined;
-  EventDetail: { eventId: string; eventName: string };
+  EventDetail: { eventId: string; eventName: string; ownerId: string };
 };
 
 export type SearchStackParams = {
   SearchEvents: undefined;
-  EventDetail: { eventId: string; eventName: string };
+  EventDetail: { eventId: string; eventName: string; ownerId: string };
 };
 
 export type ProfileStackParams = {

@@ -95,7 +95,7 @@ export default function EventsListScreen({ navigation }: Props) {
           const ev: MusicEvent = item.event;
           return (
             <View style={s.cardRow}>
-              <TouchableOpacity style={s.card} onPress={() => navigation.navigate('EventDetail', { eventId: ev.id, eventName: ev.name })}>
+              <TouchableOpacity style={s.card} onPress={() => navigation.navigate('EventDetail', { eventId: ev.id, eventName: ev.name, ownerId: ev.ownerId })}>
                 <Text style={s.eventName}>{ev.name}</Text>
                 <Text style={s.eventMeta}>{ev.isPublic ? '🌍 Público' : '🔒 Privado'} · {ev.license}</Text>
               </TouchableOpacity>

@@ -36,21 +36,21 @@ export class PlayerController {
   @Post('pause')
   async pause(@CurrentUser() u: { id: string }, @Param('id') id: string) {
     await this.assertOwner(u.id, id);
-    await this.spotify.pause();
+    await this.spotify.pause().catch(() => {});
     return { ok: true };
   }
 
   @Post('resume')
   async resume(@CurrentUser() u: { id: string }, @Param('id') id: string) {
     await this.assertOwner(u.id, id);
-    await this.spotify.resume();
+    await this.spotify.resume().catch(() => {});
     return { ok: true };
   }
 
   @Post('seek')
   async seek(@CurrentUser() u: { id: string }, @Param('id') id: string, @Body('positionMs') positionMs: number) {
     await this.assertOwner(u.id, id);
-    await this.spotify.seek(positionMs);
+    await this.spotify.seek(positionMs).catch(() => {});
     return { ok: true };
   }
 
@@ -61,12 +61,12 @@ export class PlayerController {
     if (current) await this.queue.markPlayed(current.id);
     const next = await this.queue.getTopQueued(id);
     if (!next) {
-      await this.spotify.next();
+      await this.spotify.next().catch(() => {});
       await this.gateway.emitQueueUpdate(id);
       return { playing: true };
     }
     await this.queue.markPlaying(next.id);
-    await this.spotify.play(next.spotifyUri);
+    await this.spotify.play(next.spotifyUri).catch(() => {});
     await this.gateway.emitQueueUpdate(id);
     return { playing: true, track: { trackName: next.trackName, artist: next.artist, albumArt: next.albumArt } };
   }
@@ -74,7 +74,7 @@ export class PlayerController {
   @Post('previous')
   async previous(@CurrentUser() u: { id: string }, @Param('id') id: string) {
     await this.assertOwner(u.id, id);
-    await this.spotify.previous();
+    await this.spotify.previous().catch(() => {});
     return { ok: true };
   }
 }

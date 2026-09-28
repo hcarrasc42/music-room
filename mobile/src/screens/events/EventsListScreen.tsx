@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, RefreshControl, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Modal, RefreshControl, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../state/auth';
 import { EventsStackParams } from '../../navigation';
@@ -55,6 +55,22 @@ export default function EventsListScreen({ navigation }: Props) {
     }
   };
 
+  const handleDeleteEvent = async (id: string) => {
+    Alert.alert('Eliminar evento', '¿Seguro que quieres eliminar este evento?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar', style: 'destructive', onPress: async () => {
+          try {
+            await apiFetch(`/events/${id}`, { method: 'DELETE' });
+            load();
+          } catch (e: any) {
+            Alert.alert('Error', 'No se pudo eliminar el evento');
+          }
+        },
+      },
+    ]);
+  };
+
   const myEvents = events.filter(e => e.ownerId === user?.id);
   const publicEvents = events.filter(e => e.ownerId !== user?.id);
 
@@ -77,10 +93,17 @@ export default function EventsListScreen({ navigation }: Props) {
           }
           const ev: MusicEvent = item.event;
           return (
-            <TouchableOpacity style={s.card} onPress={() => navigation.navigate('EventDetail', { eventId: ev.id, eventName: ev.name })}>
-              <Text style={s.eventName}>{ev.name}</Text>
-              <Text style={s.eventMeta}>{ev.isPublic ? '🌍 Público' : '🔒 Privado'} · {ev.license}</Text>
-            </TouchableOpacity>
+            <View style={s.cardRow}>
+              <TouchableOpacity style={s.card} onPress={() => navigation.navigate('EventDetail', { eventId: ev.id, eventName: ev.name })}>
+                <Text style={s.eventName}>{ev.name}</Text>
+                <Text style={s.eventMeta}>{ev.isPublic ? '🌍 Público' : '🔒 Privado'} · {ev.license}</Text>
+              </TouchableOpacity>
+              {ev.ownerId === user?.id && (
+                <TouchableOpacity onPress={() => handleDeleteEvent(ev.id)} style={{ padding: 6, justifyContent: 'center' }}>
+                  <Text style={{ fontSize: 16 }}>🗑</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           );
         }}
       />
@@ -116,7 +139,8 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#121212' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#121212' },
   sectionHeader: { color: '#888', fontSize: 12, fontWeight: 'bold', paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8, textTransform: 'uppercase' },
-  card: { backgroundColor: '#1e1e1e', marginHorizontal: 16, marginBottom: 8, padding: 16, borderRadius: 10 },
+  cardRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8 },
+  card: { flex: 1, backgroundColor: '#1e1e1e', padding: 16, borderRadius: 10 },
   eventName: { color: '#fff', fontSize: 16, fontWeight: '600' },
   eventMeta: { color: '#888', fontSize: 13, marginTop: 4 },
   fab: { position: 'absolute', bottom: 24, right: 24, backgroundColor: '#1db954', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', elevation: 4 },

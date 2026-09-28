@@ -1,3 +1,4 @@
+import { NavigationContainer } from '@react-navigation/native';
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from './src/state/auth';
@@ -8,9 +9,9 @@ export default function App() {
   useEffect(() => { hydrate(); }, [hydrate]);
 
   return (
-    <>
+    <NavigationContainer>
       <StatusBar style="light" />
       <RootNavigator />
-    </>
+    </NavigationContainer>
   );
 }

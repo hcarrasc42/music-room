@@ -22,7 +22,7 @@ export default function SuggestModal({ visible, eventId, onClose, onSuggested }:
   const [results, setResults] = useState<SpotifyTrack[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState<string | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const search = useCallback(async (q: string) => {
     if (!q.trim()) { setResults([]); return; }

@@ -10,9 +10,11 @@ interface Props {
   userVoted: boolean;
   onVote: (id: string) => void;
   onUnvote: (id: string) => void;
+  canDelete?: boolean;
+  onDelete?: (id: string) => void;
 }
 
-export default function TrackRow({ id, trackName, artist, albumArt, votes, userVoted, onVote, onUnvote }: Props) {
+export default function TrackRow({ id, trackName, artist, albumArt, votes, userVoted, onVote, onUnvote, canDelete, onDelete }: Props) {
   return (
     <View style={s.row}>
       {albumArt ? (
@@ -30,6 +32,11 @@ export default function TrackRow({ id, trackName, artist, albumArt, votes, userV
       >
         <Text style={[s.voteText, userVoted && s.votedText]}>▲ {votes}</Text>
       </TouchableOpacity>
+      {canDelete && onDelete && (
+        <TouchableOpacity style={s.deleteBtn} onPress={() => onDelete(id)}>
+          <Text style={s.deleteText}>🗑</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -45,4 +52,6 @@ const s = StyleSheet.create({
   votedBtn: { backgroundColor: '#1db954' },
   voteText: { color: '#aaa', fontSize: 13, fontWeight: 'bold' },
   votedText: { color: '#fff' },
+  deleteBtn: { padding: 6 },
+  deleteText: { fontSize: 16 },
 });

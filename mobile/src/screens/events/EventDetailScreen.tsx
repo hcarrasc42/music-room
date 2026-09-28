@@ -18,6 +18,7 @@ interface Suggestion {
   albumArt: string | null;
   votes: string;
   userVoted: boolean;
+  suggestedById: string;
 }
 
 interface NowPlaying {
@@ -29,7 +30,7 @@ type Props = NativeStackScreenProps<EventsStackParams, 'EventDetail'>;
 
 export default function EventDetailScreen({ route }: Props) {
   const { eventId } = route.params;
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { backendUrl } = useSettings();
 
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -88,6 +89,15 @@ export default function EventDetailScreen({ route }: Props) {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    try {
+      await apiFetch(`/suggestions/${id}`, { method: 'DELETE' });
+      loadSuggestions();
+    } catch (e: any) {
+      Alert.alert('Error', 'No se pudo eliminar la sugerencia');
+    }
+  };
+
   return (
     <View style={s.container}>
       <NowPlayingBar trackName={nowPlaying?.trackName ?? null} artist={nowPlaying?.artist ?? null} />
@@ -110,6 +120,8 @@ export default function EventDetailScreen({ route }: Props) {
             userVoted={Boolean(item.userVoted)}
             onVote={handleVote}
             onUnvote={handleUnvote}
+            canDelete={item.suggestedById === user?.id}
+            onDelete={handleDelete}
           />
         )}
       />

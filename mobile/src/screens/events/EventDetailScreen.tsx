@@ -21,12 +21,21 @@ interface Suggestion {
   suggestedById: string;
 }
 
-interface NowPlaying {
-  trackName: string;
-  artist: string;
+interface PlayerState {
+  isPlaying: boolean;
+  progressMs: number;
+  durationMs: number;
+  trackName: string | null;
+  artist: string | null;
+  albumArt: string | null;
 }
 
 type Props = NativeStackScreenProps<EventsStackParams, 'EventDetail'>;
+
+function formatMs(ms: number): string {
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
 
 export default function EventDetailScreen({ route }: Props) {
   const { eventId } = route.params;
@@ -34,11 +43,13 @@ export default function EventDetailScreen({ route }: Props) {
   const { backendUrl } = useSettings();
 
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
+  const [player, setPlayer] = useState<PlayerState | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showSuggest, setShowSuggest] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [barWidth, setBarWidth] = useState(1);
   const socketRef = useRef<Socket | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   const loadSuggestions = useCallback(async () => {
     setLoadError('');
@@ -52,24 +63,33 @@ export default function EventDetailScreen({ route }: Props) {
     }
   }, [eventId]);
 
+  const pollPlayer = useCallback(async () => {
+    try {
+      const data = await apiFetch<PlayerState | null>('/spotify/player');
+      setPlayer(data);
+    } catch {
+      // silently ignore — Spotify may not be active
+    }
+  }, []);
+
   useEffect(() => {
     loadSuggestions();
+    void pollPlayer();
+    pollRef.current = setInterval(() => { void pollPlayer(); }, 2000);
 
     const socket = io(backendUrl, { auth: { token }, transports: ['websocket'] });
     socketRef.current = socket;
 
     socket.emit('join', { eventId });
     socket.on('queue:updated', () => loadSuggestions());
-    socket.on('track:playing', (data: { trackName: string; artist: string }) => {
-      setNowPlaying(data);
-    });
-    socket.on('queue:empty', () => setNowPlaying(null));
+    socket.on('queue:empty', () => setPlayer(null));
 
     return () => {
+      clearInterval(pollRef.current);
       socket.emit('leave', { eventId });
       socket.disconnect();
     };
-  }, [eventId, backendUrl, token, loadSuggestions]);
+  }, [eventId, backendUrl, token, loadSuggestions, pollPlayer]);
 
   const handleVote = async (id: string) => {
     try {
@@ -93,14 +113,86 @@ export default function EventDetailScreen({ route }: Props) {
     try {
       await apiFetch(`/suggestions/${id}`, { method: 'DELETE' });
       loadSuggestions();
-    } catch (e: any) {
+    } catch {
       Alert.alert('Error', 'No se pudo eliminar la sugerencia');
     }
   };
 
+  const handlePlayPause = async () => {
+    try {
+      if (player?.isPlaying) {
+        await apiFetch('/spotify/pause', { method: 'POST' });
+      } else {
+        await apiFetch('/spotify/play', { method: 'POST' });
+      }
+      await pollPlayer();
+    } catch {
+      Alert.alert('Error', 'No se pudo controlar la reproducción');
+    }
+  };
+
+  const handleNext = async () => {
+    try {
+      await apiFetch('/spotify/next', { method: 'POST' });
+      setTimeout(() => { void pollPlayer(); }, 500);
+    } catch {
+      Alert.alert('Error', 'No se pudo cambiar la canción');
+    }
+  };
+
+  const handlePrevious = async () => {
+    try {
+      await apiFetch('/spotify/previous', { method: 'POST' });
+      setTimeout(() => { void pollPlayer(); }, 500);
+    } catch {
+      Alert.alert('Error', 'No se pudo cambiar la canción');
+    }
+  };
+
+  const handleSeek = (x: number) => {
+    if (!player?.durationMs) return;
+    const ratio = Math.max(0, Math.min(1, x / barWidth));
+    const positionMs = Math.floor(ratio * player.durationMs);
+    apiFetch('/spotify/seek', { method: 'POST', body: JSON.stringify({ positionMs }) })
+      .then(() => pollPlayer())
+      .catch(() => {});
+  };
+
+  const progress = player?.durationMs
+    ? Math.floor((player.progressMs / player.durationMs) * barWidth)
+    : 0;
+
   return (
     <View style={s.container}>
-      <NowPlayingBar trackName={nowPlaying?.trackName ?? null} artist={nowPlaying?.artist ?? null} />
+      <NowPlayingBar trackName={player?.trackName ?? null} artist={player?.artist ?? null} />
+
+      {player && (
+        <View style={p.container}>
+          <View style={p.progressRow}>
+            <Text style={p.time}>{formatMs(player.progressMs)}</Text>
+            <TouchableOpacity
+              style={p.barTrack}
+              onLayout={e => setBarWidth(e.nativeEvent.layout.width)}
+              onPress={e => handleSeek(e.nativeEvent.locationX)}
+              activeOpacity={1}
+            >
+              <View style={[p.barFill, { width: progress }]} />
+            </TouchableOpacity>
+            <Text style={p.time}>{formatMs(player.durationMs)}</Text>
+          </View>
+          <View style={p.controls}>
+            <TouchableOpacity style={p.ctrlBtn} onPress={handlePrevious}>
+              <Text style={p.ctrlText}>⏮</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={p.playBtn} onPress={handlePlayPause}>
+              <Text style={p.playText}>{player.isPlaying ? '⏸' : '▶'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={p.ctrlBtn} onPress={handleNext}>
+              <Text style={p.ctrlText}>⏭</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {loadError ? <Text style={st.error}>{loadError}</Text> : null}
 
@@ -140,7 +232,21 @@ export default function EventDetailScreen({ route }: Props) {
   );
 }
 
-const s = StyleSheet.create({ container: { flex: 1, backgroundColor: '#121212' } });
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#121212' },
+});
+const p = StyleSheet.create({
+  container: { backgroundColor: '#1a1a1a', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#222' },
+  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  time: { color: '#888', fontSize: 11, minWidth: 32, textAlign: 'center' },
+  barTrack: { flex: 1, height: 4, backgroundColor: '#333', borderRadius: 2, justifyContent: 'center' },
+  barFill: { height: 4, backgroundColor: '#1db954', borderRadius: 2 },
+  controls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 24 },
+  ctrlBtn: { padding: 8 },
+  ctrlText: { fontSize: 22, color: '#fff' },
+  playBtn: { backgroundColor: '#1db954', borderRadius: 24, width: 48, height: 48, justifyContent: 'center', alignItems: 'center' },
+  playText: { fontSize: 20, color: '#fff' },
+});
 const st = StyleSheet.create({
   empty: { color: '#888', textAlign: 'center', marginTop: 40, fontSize: 15 },
   error: { color: '#e74c3c', textAlign: 'center', padding: 12, fontSize: 14 },

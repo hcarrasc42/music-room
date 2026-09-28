@@ -6,8 +6,8 @@ interface SpotifyTrack {
   id: string;
   uri: string;
   name: string;
-  artists: { name: string }[];
-  album?: { images: { url: string }[] };
+  artist: string;
+  albumArt: string;
 }
 
 interface Props {
@@ -52,8 +52,8 @@ export default function SuggestModal({ visible, eventId, onClose, onSuggested }:
           spotifyTrackId: track.id,
           spotifyUri: track.uri,
           trackName: track.name,
-          artist: track.artists.map(a => a.name).join(', '),
-          albumArt: track.album?.images[0]?.url ?? null,
+          artist: track.artist,
+          albumArt: track.albumArt || null,
         }),
       });
       onSuggested();
@@ -88,14 +88,14 @@ export default function SuggestModal({ visible, eventId, onClose, onSuggested }:
           keyExtractor={t => t.id}
           renderItem={({ item }) => (
             <TouchableOpacity style={s.track} onPress={() => handleSuggest(item)} disabled={!!submitting}>
-              {item.album?.images[0] ? (
-                <Image source={{ uri: item.album.images[0].url }} style={s.art} />
+              {item.albumArt ? (
+                <Image source={{ uri: item.albumArt }} style={s.art} />
               ) : (
                 <View style={[s.art, s.artPlaceholder]} />
               )}
               <View style={s.info}>
                 <Text style={s.name} numberOfLines={1}>{item.name}</Text>
-                <Text style={s.artist} numberOfLines={1}>{item.artists.map(a => a.name).join(', ')}</Text>
+                <Text style={s.artist} numberOfLines={1}>{item.artist}</Text>
               </View>
               {submitting === item.id && <ActivityIndicator color="#1db954" />}
             </TouchableOpacity>

@@ -1,7 +1,7 @@
 // mobile/src/screens/events/EventDetailScreen.tsx
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, TouchableOpacity, Text, View } from 'react-native';
+import { Alert, FlatList, RefreshControl, StyleSheet, TouchableOpacity, Text, View } from 'react-native';
 import { io, Socket } from 'socket.io-client';
 import NowPlayingBar from '../../components/NowPlayingBar';
 import SuggestModal from '../../components/SuggestModal';
@@ -36,12 +36,16 @@ export default function EventDetailScreen({ route }: Props) {
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showSuggest, setShowSuggest] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const socketRef = useRef<Socket | null>(null);
 
   const loadSuggestions = useCallback(async () => {
+    setLoadError('');
     try {
       const data = await apiFetch<Suggestion[]>(`/events/${eventId}/suggestions`);
       setSuggestions(data ?? []);
+    } catch {
+      setLoadError('No se pudo cargar la cola');
     } finally {
       setRefreshing(false);
     }
@@ -70,19 +74,25 @@ export default function EventDetailScreen({ route }: Props) {
     try {
       await apiFetch(`/suggestions/${id}/vote`, { method: 'POST' });
       loadSuggestions();
-    } catch { /* ignore — already voted */ }
+    } catch (e: any) {
+      if (e?.status !== 409) Alert.alert('Error', 'No se pudo votar');
+    }
   };
 
   const handleUnvote = async (id: string) => {
     try {
       await apiFetch(`/suggestions/${id}/vote`, { method: 'DELETE' });
       loadSuggestions();
-    } catch { /* ignore */ }
+    } catch (e: any) {
+      if (e?.status !== 409) Alert.alert('Error', 'No se pudo quitar el voto');
+    }
   };
 
   return (
     <View style={s.container}>
       <NowPlayingBar trackName={nowPlaying?.trackName ?? null} artist={nowPlaying?.artist ?? null} />
+
+      {loadError ? <Text style={st.error}>{loadError}</Text> : null}
 
       <FlatList
         data={suggestions}
@@ -121,6 +131,7 @@ export default function EventDetailScreen({ route }: Props) {
 const s = StyleSheet.create({ container: { flex: 1, backgroundColor: '#121212' } });
 const st = StyleSheet.create({
   empty: { color: '#888', textAlign: 'center', marginTop: 40, fontSize: 15 },
+  error: { color: '#e74c3c', textAlign: 'center', padding: 12, fontSize: 14 },
   fab: { position: 'absolute', bottom: 24, right: 16, backgroundColor: '#1db954', borderRadius: 24, paddingHorizontal: 20, paddingVertical: 12, elevation: 4 },
   fabText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
 });

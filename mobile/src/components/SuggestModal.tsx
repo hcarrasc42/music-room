@@ -7,7 +7,7 @@ interface SpotifyTrack {
   uri: string;
   name: string;
   artists: { name: string }[];
-  album: { images: { url: string }[] };
+  album?: { images: { url: string }[] };
 }
 
 interface Props {
@@ -53,7 +53,7 @@ export default function SuggestModal({ visible, eventId, onClose, onSuggested }:
           spotifyUri: track.uri,
           trackName: track.name,
           artist: track.artists.map(a => a.name).join(', '),
-          albumArt: track.album.images[0]?.url ?? null,
+          albumArt: track.album?.images[0]?.url ?? null,
         }),
       });
       onSuggested();
@@ -88,7 +88,7 @@ export default function SuggestModal({ visible, eventId, onClose, onSuggested }:
           keyExtractor={t => t.id}
           renderItem={({ item }) => (
             <TouchableOpacity style={s.track} onPress={() => handleSuggest(item)} disabled={!!submitting}>
-              {item.album.images[0] ? (
+              {item.album?.images[0] ? (
                 <Image source={{ uri: item.album.images[0].url }} style={s.art} />
               ) : (
                 <View style={[s.art, s.artPlaceholder]} />

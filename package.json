@@ -1,0 +1,10 @@
+{
+  "name": "music-room",
+  "private": true,
+  "scripts": {
+    "setup": "node scripts/setup.js",
+    "dev": "node scripts/dev.js",
+    "stop": "docker compose down",
+    "test": "npm --prefix backend test"
+  }
+}

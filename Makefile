@@ -1,18 +1,13 @@
 .PHONY: install dev stop test seed load clean
 
 install:
-	cd backend && npm install
-	cd mobile && npm install
+	npm run setup
 
 dev:
-	docker compose up -d
-	cd backend && npm run start:dev &
-	cd mobile && npx expo start
+	npm run dev
 
 stop:
-	docker compose down
-	@pkill -f "nest start" 2>/dev/null || true
-	@pkill -f "expo start" 2>/dev/null || true
+	npm run stop
 
 test:
 	cd backend && npm run test

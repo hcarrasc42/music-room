@@ -4,6 +4,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import KeyboardScrollView from '../../components/KeyboardScrollView';
 import { useAuth } from '../../state/auth';
 import { AuthStackParams } from '../../navigation';
 
@@ -70,7 +71,7 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={s.container}>
+    <KeyboardScrollView style={s.screen} contentContainerStyle={s.container}>
       <Text style={s.title}>🎵 Music Room</Text>
       <Text style={s.subtitle}>Music, Collaboration &amp; Mobility</Text>
 
@@ -98,12 +99,13 @@ export default function LoginScreen({ navigation }: Props) {
       <TouchableOpacity onPress={() => navigation.navigate('Register')}>
         <Text style={s.link}>¿No tienes cuenta? Regístrate</Text>
       </TouchableOpacity>
-    </View>
+    </KeyboardScrollView>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212', padding: 24, justifyContent: 'center' },
+  screen: { flex: 1, backgroundColor: '#121212' },
+  container: { flexGrow: 1, backgroundColor: '#121212', padding: 24, justifyContent: 'center' },
   title: { color: '#fff', fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 4 },
   subtitle: { color: '#888', fontSize: 13, textAlign: 'center', marginBottom: 32 },
   input: { backgroundColor: '#1e1e1e', color: '#fff', borderRadius: 8, padding: 14, marginBottom: 12, fontSize: 15, borderWidth: 1, borderColor: '#333' },

@@ -1,8 +1,16 @@
-import { IsIn, IsOptional, IsString, IsUrl } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsIn, IsOptional, IsString, IsUrl, Matches } from 'class-validator';
+import { normalizeUsername, USERNAME_REGEX, USERNAME_RULES } from '../../common/validation/username.js';
 
 type Visibility = 'public' | 'friends' | 'private';
 
 export class UpdateProfileDto {
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? normalizeUsername(value) : value))
+  @IsString()
+  @Matches(USERNAME_REGEX, { message: USERNAME_RULES })
+  username?: string;
+
   @IsOptional() @IsString() displayName?: string;
   @IsOptional() @IsUrl() avatarUrl?: string;
   @IsOptional() @IsString() bio?: string;

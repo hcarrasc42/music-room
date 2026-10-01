@@ -2,13 +2,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { apiFetch } from '../../api/client';
+import KeyboardScrollView from '../../components/KeyboardScrollView';
 import { ProfileStackParams } from '../../navigation';
 
 type Visibility = 'public' | 'friends' | 'private';
 
 interface Profile {
+  username: string;
   displayName: string | null;
   bio: string | null;
   city: string | null;
@@ -46,11 +48,23 @@ export default function ProfileScreen({ navigation }: Props) {
     if (!form) return;
     setSaving(true);
     setSaveError('');
+    // /users/me también devuelve id y email, que el backend rechaza: solo se envían los campos editables
+    const body = {
+      username: form.username,
+      displayName: form.displayName ?? '',
+      bio: form.bio ?? '',
+      city: form.city ?? '',
+      bioVisibility: form.bioVisibility,
+      musicGenres: form.musicGenres ?? '',
+      favoriteArtists: form.favoriteArtists ?? '',
+      musicVisibility: form.musicVisibility,
+    };
     try {
-      await apiFetch('/users/me', { method: 'PUT', body: JSON.stringify(form) });
+      await apiFetch('/users/me', { method: 'PUT', body: JSON.stringify(body) });
       setProfile(form);
-    } catch {
-      setSaveError('No se pudo guardar el perfil');
+    } catch (e: any) {
+      const detail = Array.isArray(e.message) ? e.message.join(', ') : e.message;
+      setSaveError(`No se pudo guardar el perfil${detail ? `: ${detail}` : ''}`);
     } finally {
       setSaving(false);
     }
@@ -64,7 +78,12 @@ export default function ProfileScreen({ navigation }: Props) {
   if (loading || !form) return <View style={s.center}><ActivityIndicator color="#1db954" /></View>;
 
   return (
-    <ScrollView style={s.container} contentContainerStyle={{ padding: 16 }}>
+    <KeyboardScrollView style={s.container} contentContainerStyle={{ padding: 16 }}>
+
+      <Text style={s.label}>Nombre de usuario</Text>
+      <TextInput style={s.input} value={form.username} onChangeText={v => setForm({ ...form, username: v.toLowerCase().replace(/\s/g, '') })}
+        placeholder="tu_usuario" placeholderTextColor="#888" autoCapitalize="none" autoCorrect={false} maxLength={20} />
+      <Text style={s.hint}>Con este nombre te buscan tus amigos. Letras, números, _ y .</Text>
 
       <Text style={s.label}>Nombre de display</Text>
       <TextInput style={s.input} value={form.displayName ?? ''} onChangeText={v => setForm({ ...form, displayName: v })} placeholder="Tu nombre" placeholderTextColor="#888" />
@@ -105,7 +124,7 @@ export default function ProfileScreen({ navigation }: Props) {
         <Text style={s.settingsLinkText}>Ajustes</Text>
       </TouchableOpacity>
 
-    </ScrollView>
+    </KeyboardScrollView>
   );
 }
 
@@ -116,6 +135,7 @@ const s = StyleSheet.create({
   input: { backgroundColor: '#1e1e1e', color: '#fff', borderRadius: 8, padding: 12, fontSize: 15, borderWidth: 1, borderColor: '#333' },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   vis: { fontSize: 20, padding: 4 },
+  hint: { color: '#666', fontSize: 12, marginTop: 6 },
   error: { color: '#e74c3c', fontSize: 13, marginTop: 8 },
   saveBtn: { backgroundColor: '#1db954', borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 24 },
   saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },

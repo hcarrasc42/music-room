@@ -8,7 +8,7 @@ const mockUsersService = {
   getMyProfile: vi.fn(),
   updateProfile: vi.fn(),
   getPublicProfile: vi.fn(),
-  searchByEmail: vi.fn(),
+  searchByUsername: vi.fn(),
 };
 
 const mockJwtGuard = { canActivate: (_ctx: ExecutionContext) => true };

@@ -13,6 +13,10 @@ export class User {
   @Column({ unique: true })
   email: string;
 
+  // Siempre en minúsculas (ver common/validation/username.ts)
+  @Column({ type: 'varchar', unique: true })
+  username: string;
+
   @Column({ type: 'varchar', nullable: true })
   passwordHash: string | null;
 

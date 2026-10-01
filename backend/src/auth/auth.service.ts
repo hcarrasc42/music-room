@@ -10,6 +10,8 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { Repository } from 'typeorm';
 import { MailService } from '../common/mail/mail.service.js';
+import { checkEmail } from '../common/validation/email-check.js';
+import { normalizeUsername } from '../common/validation/username.js';
 import { EmailVerification } from './entities/email-verification.entity.js';
 import { RefreshToken } from './entities/refresh-token.entity.js';
 import { User } from './entities/user.entity.js';
@@ -25,12 +27,17 @@ export class AuthService {
     private cfg: ConfigService,
   ) {}
 
-  async register(email: string, password: string) {
-    const exists = await this.users.findOneBy({ email });
-    if (exists) throw new BadRequestException('Email already in use');
+  async register(rawEmail: string, password: string, rawUsername: string) {
+    const email = rawEmail.trim().toLowerCase();
+    const emailCheck = checkEmail(email);
+    if (!emailCheck.ok) throw new BadRequestException(emailCheck.error);
+
+    const username = normalizeUsername(rawUsername);
+    if (await this.users.findOneBy({ email })) throw new BadRequestException('Ya hay una cuenta asociada a este email');
+    if (await this.users.findOneBy({ username })) throw new BadRequestException('Ese nombre de usuario ya está cogido');
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await this.users.save({ email, passwordHash, isVerified: false });
+    const user = await this.users.save({ email, username, passwordHash, isVerified: false });
 
     const rawToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
@@ -42,12 +49,12 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
-    const user = await this.users.findOneBy({ email });
-    if (!user || !user.passwordHash) throw new UnauthorizedException('Invalid credentials');
-    if (!user.isVerified) throw new UnauthorizedException('Email not verified');
+    const user = await this.users.findOneBy({ email: email.trim().toLowerCase() });
+    if (!user || !user.passwordHash) throw new UnauthorizedException('Email o contraseña incorrectos');
+    if (!user.isVerified) throw new UnauthorizedException('Tienes que verificar tu email antes de entrar');
 
     const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) throw new UnauthorizedException('Invalid credentials');
+    if (!valid) throw new UnauthorizedException('Email o contraseña incorrectos');
 
     return this.issueTokens(user);
   }
@@ -91,7 +98,8 @@ export class AuthService {
     return { message: 'Email verified' };
   }
 
-  async forgotPassword(email: string) {
+  async forgotPassword(rawEmail: string) {
+    const email = rawEmail.trim().toLowerCase();
     const user = await this.users.findOneBy({ email });
     if (!user) return { message: 'If the email exists, a reset link was sent' };
 
@@ -128,6 +136,7 @@ export class AuthService {
     if (!user) {
       user = await this.users.save({
         email: payload.email,
+        username: await this.freeUsername(),
         googleId: payload.sub,
         isVerified: true,
         passwordHash: null,
@@ -137,5 +146,14 @@ export class AuthService {
     }
 
     return this.issueTokens(user);
+  }
+
+  // Login con Google no pasa por el registro: se genera un nombre de usuario provisional
+  // (usuario_1234) que no revela el email y que se puede cambiar desde el perfil
+  private async freeUsername(): Promise<string> {
+    for (;;) {
+      const candidate = `usuario_${crypto.randomInt(1000, 1_000_000)}`;
+      if (!(await this.users.findOneBy({ username: candidate }))) return candidate;
+    }
   }
 }

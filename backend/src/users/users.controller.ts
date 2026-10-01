@@ -23,8 +23,8 @@ export class UsersController {
   }
 
   @Get('search')
-  search(@Query('q') q: string) {
-    return this.users.searchByEmail(q);
+  search(@CurrentUser() user: { id: string }, @Query('q') q: string) {
+    return this.users.searchByUsername(user.id, q);
   }
 
   @Get(':id')

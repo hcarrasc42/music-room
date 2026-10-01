@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Modal, RefreshControl, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, RefreshControl, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../state/auth';
 import { EventsStackParams } from '../../navigation';
@@ -114,7 +114,7 @@ export default function EventsListScreen({ navigation }: Props) {
       </TouchableOpacity>
 
       <Modal visible={showCreate} transparent animationType="fade" onRequestClose={() => setShowCreate(false)}>
-        <View style={s.overlay}>
+        <KeyboardAvoidingView style={s.overlay} behavior="padding">
           <View style={s.modal}>
             <Text style={s.modalTitle}>Nuevo evento</Text>
             <TextInput style={s.input} placeholder="Nombre del evento" placeholderTextColor="#888"
@@ -130,7 +130,7 @@ export default function EventsListScreen({ navigation }: Props) {
               <Text style={s.cancel}>Cancelar</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

@@ -20,9 +20,9 @@ export class FriendsController {
   @Post()
   sendRequest(
     @CurrentUser() user: { id: string },
-    @Body('email') email: string,
+    @Body('userId') friendId: string,
   ) {
-    return this.users.sendFriendRequest(user.id, email);
+    return this.users.sendFriendRequest(user.id, friendId);
   }
 
   @Get()

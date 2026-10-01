@@ -20,8 +20,8 @@ describe('AuthController', () => {
 
   it('register calls authService.register', async () => {
     mockAuthService.register.mockResolvedValue({ message: 'ok' });
-    const result = await controller.register({ email: 'a@b.com', password: '12345678' });
-    expect(mockAuthService.register).toHaveBeenCalledWith('a@b.com', '12345678');
+    const result = await controller.register({ email: 'a@b.com', password: '12345678', username: 'pepe' });
+    expect(mockAuthService.register).toHaveBeenCalledWith('a@b.com', '12345678', 'pepe');
     expect(result).toEqual({ message: 'ok' });
   });
 

@@ -2,6 +2,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
+import CodeInput from '../../components/CodeInput';
 import KeyboardScrollView from '../../components/KeyboardScrollView';
 import { apiFetch } from '../../api/client';
 import { AuthStackParams } from '../../navigation';
@@ -10,29 +11,42 @@ type Props = NativeStackScreenProps<AuthStackParams, 'ResetPassword'>;
 
 export default function ResetPasswordScreen({ route, navigation }: Props) {
   const { email } = route.params;
-  const [token, setToken] = useState('');
+  const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [done, setDone] = useState(false);
 
   const handleReset = async () => {
-    if (!token.trim()) { setError('Pega el código que te hemos enviado'); return; }
+    if (code.length !== 6) { setError('El código son 6 dígitos'); return; }
     if (password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres'); return; }
     if (password !== confirm) { setError('Las contraseñas no coinciden'); return; }
     setLoading(true);
     setError('');
+    setInfo('');
     try {
       await apiFetch('/auth/reset-password', {
         method: 'POST',
-        body: JSON.stringify({ token: token.trim(), password }),
+        body: JSON.stringify({ email, code, password }),
       });
       setDone(true);
     } catch (e: any) {
-      setError(e.message === 'Invalid or expired token' ? 'El código no es válido o ha caducado (dura 1 hora)' : e.message ?? 'Error al cambiar la contraseña');
+      setError(e.message ?? 'Error al cambiar la contraseña');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setError('');
+    try {
+      await apiFetch('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
+      setCode('');
+      setInfo('Si no te llega en un minuto, revisa la carpeta de spam. Solo se envía un código por minuto.');
+    } catch (e: any) {
+      setError(e.message ?? 'No se pudo reenviar el código');
     }
   };
 
@@ -52,18 +66,21 @@ export default function ResetPasswordScreen({ route, navigation }: Props) {
     <KeyboardScrollView style={s.screen} contentContainerStyle={s.container}>
       <Text style={s.title}>Nueva contraseña</Text>
       <Text style={s.body}>
-        Hemos enviado un código a <Text style={s.email}>{email}</Text>. Pégalo aquí y elige tu nueva contraseña.
+        Hemos enviado un código de 6 dígitos a <Text style={s.email}>{email}</Text>. Escríbelo aquí y elige tu nueva contraseña.
       </Text>
-      <TextInput style={s.input} placeholder="Código" placeholderTextColor="#888"
-        value={token} onChangeText={setToken} autoCapitalize="none" autoCorrect={false} />
+      <CodeInput value={code} onChange={setCode} />
       {/* textContentType="oneTimeCode" evita que iOS proponga una contraseña inventada */}
       <TextInput style={s.input} placeholder="Nueva contraseña (mín. 8 caracteres)" placeholderTextColor="#888"
         value={password} onChangeText={setPassword} secureTextEntry textContentType="oneTimeCode" />
       <TextInput style={s.input} placeholder="Repite la contraseña" placeholderTextColor="#888"
         value={confirm} onChangeText={setConfirm} secureTextEntry textContentType="oneTimeCode" />
       {error ? <Text style={s.error}>{error}</Text> : null}
+      {info ? <Text style={s.info}>{info}</Text> : null}
       <TouchableOpacity style={s.btn} onPress={handleReset} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Cambiar contraseña</Text>}
+      </TouchableOpacity>
+      <TouchableOpacity onPress={handleResend}>
+        <Text style={s.link}>Reenviar código</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => navigation.navigate('Login')}>
         <Text style={s.link}>Volver al login</Text>
@@ -83,4 +100,5 @@ const s = StyleSheet.create({
   btnText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
   link: { color: '#1db954', textAlign: 'center', marginTop: 16, fontSize: 14 },
   error: { color: '#e74c3c', textAlign: 'center', marginBottom: 8 },
+  info: { color: '#aaa', textAlign: 'center', marginBottom: 8, fontSize: 13 },
 });

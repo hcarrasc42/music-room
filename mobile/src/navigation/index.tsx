@@ -16,13 +16,15 @@ import SearchEventsScreen from '../screens/search/SearchEventsScreen';
 import FriendsScreen from '../screens/friends/FriendsScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import SettingsScreen from '../screens/profile/SettingsScreen';
+import ChangePasswordScreen from '../screens/profile/ChangePasswordScreen';
 
 export type AuthStackParams = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
   ResetPassword: { email: string };
-  VerifyEmail: { email: string; password: string };
+  VerifyEmail: { email: string };
+  Settings: undefined;
 };
 
 export type EventsStackParams = {
@@ -38,7 +40,11 @@ export type SearchStackParams = {
 export type ProfileStackParams = {
   Profile: undefined;
   Settings: undefined;
+  ChangePassword: undefined;
 };
+
+// Cabecera oscura para las pantallas de pila que la muestran
+const darkHeader = { headerStyle: { backgroundColor: '#121212' }, headerTintColor: '#fff' };
 
 const AuthStack = createNativeStackNavigator<AuthStackParams>();
 const EventsStack = createNativeStackNavigator<EventsStackParams>();
@@ -69,6 +75,7 @@ function ProfileNavigator() {
     <ProfileStack.Navigator>
       <ProfileStack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Perfil' }} />
       <ProfileStack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Ajustes' }} />
+      <ProfileStack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: 'Contraseña' }} />
     </ProfileStack.Navigator>
   );
 }
@@ -113,6 +120,8 @@ export default function RootNavigator() {
       <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <AuthStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
       <AuthStack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
+      <AuthStack.Screen name="Settings" component={SettingsScreen}
+        options={{ headerShown: true, title: 'Ajustes', ...darkHeader }} />
     </AuthStack.Navigator>
   );
 }

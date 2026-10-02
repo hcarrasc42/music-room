@@ -1,9 +1,12 @@
 // mobile/src/screens/auth/LoginScreen.tsx
+import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { apiFetch } from '../../api/client';
 import KeyboardScrollView from '../../components/KeyboardScrollView';
 import { useAuth } from '../../state/auth';
 import { AuthStackParams } from '../../navigation';
@@ -11,6 +14,8 @@ import { AuthStackParams } from '../../navigation';
 WebBrowser.maybeCompleteAuthSession();
 
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? '';
+// Mensaje exacto que devuelve el backend (auth.service.ts → login)
+const UNVERIFIED_MESSAGE = 'Tienes que verificar tu email antes de entrar';
 
 // Separate component so the hook is always called unconditionally within it.
 // LoginScreen only renders this when GOOGLE_CLIENT_ID is set, avoiding the
@@ -44,6 +49,7 @@ export default function LoginScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login, loginGoogle } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const handleGoogleToken = async (idToken: string) => {
     setLoading(true);
@@ -64,6 +70,16 @@ export default function LoginScreen({ navigation }: Props) {
     try {
       await login(email.trim(), password);
     } catch (e: any) {
+      if (e.message === UNVERIFIED_MESSAGE) {
+        // Cuenta sin verificar: se manda un código nuevo y se pasa a la pantalla de verificación
+        const cleanEmail = email.trim().toLowerCase();
+        await apiFetch('/auth/resend-verification', {
+          method: 'POST',
+          body: JSON.stringify({ email: cleanEmail }),
+        }).catch(() => undefined);
+        navigation.navigate('VerifyEmail', { email: cleanEmail });
+        return;
+      }
       setError(e.message ?? 'Error al iniciar sesión');
     } finally {
       setLoading(false);
@@ -71,40 +87,48 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   return (
-    <KeyboardScrollView style={s.screen} contentContainerStyle={s.container}>
-      <Text style={s.title}>🎵 Music Room</Text>
-      <Text style={s.subtitle}>Music, Collaboration &amp; Mobility</Text>
+    <View style={s.screen}>
+      <KeyboardScrollView style={s.screen} contentContainerStyle={s.container}>
+        <Text style={s.title}>🎵 Music Room</Text>
+        <Text style={s.subtitle}>Music, Collaboration &amp; Mobility</Text>
 
-      <TextInput style={s.input} placeholder="Email" placeholderTextColor="#888"
-        value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
-      <TextInput style={s.input} placeholder="Contraseña" placeholderTextColor="#888"
-        value={password} onChangeText={setPassword} secureTextEntry />
+        <TextInput style={s.input} placeholder="Email" placeholderTextColor="#888"
+          value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+        <TextInput style={s.input} placeholder="Contraseña" placeholderTextColor="#888"
+          value={password} onChangeText={setPassword} secureTextEntry />
 
-      {error ? <Text style={s.error}>{error}</Text> : null}
+        {error ? <Text style={s.error}>{error}</Text> : null}
 
-      <TouchableOpacity style={s.btn} onPress={handleLogin} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Iniciar sesión</Text>}
+        <TouchableOpacity style={s.btn} onPress={handleLogin} disabled={loading}>
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Iniciar sesión</Text>}
+        </TouchableOpacity>
+
+        {GOOGLE_CLIENT_ID ? (
+          <>
+            <Text style={s.divider}>— o continuar con —</Text>
+            <GoogleLoginButton onToken={handleGoogleToken} disabled={loading} />
+          </>
+        ) : null}
+
+        <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+          <Text style={s.link}>¿Olvidaste tu contraseña?</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+          <Text style={s.link}>¿No tienes cuenta? Regístrate</Text>
+        </TouchableOpacity>
+      </KeyboardScrollView>
+      {/* Ajustes antes de entrar: si la URL del backend está mal no se podría ni iniciar sesión */}
+      <TouchableOpacity style={[s.settingsBtn, { top: insets.top + 8 }]} onPress={() => navigation.navigate('Settings')}
+        accessibilityLabel="Ajustes del servidor" hitSlop={12}>
+        <Ionicons name="settings-outline" size={24} color="#888" />
       </TouchableOpacity>
-
-      {GOOGLE_CLIENT_ID ? (
-        <>
-          <Text style={s.divider}>— o continuar con —</Text>
-          <GoogleLoginButton onToken={handleGoogleToken} disabled={loading} />
-        </>
-      ) : null}
-
-      <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-        <Text style={s.link}>¿Olvidaste tu contraseña?</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-        <Text style={s.link}>¿No tienes cuenta? Regístrate</Text>
-      </TouchableOpacity>
-    </KeyboardScrollView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#121212' },
+  settingsBtn: { position: 'absolute', right: 16, padding: 4 },
   container: { flexGrow: 1, backgroundColor: '#121212', padding: 24, justifyContent: 'center' },
   title: { color: '#fff', fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 4 },
   subtitle: { color: '#888', fontSize: 13, textAlign: 'center', marginBottom: 32 },

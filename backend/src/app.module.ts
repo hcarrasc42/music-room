@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { HttpThrottlerGuard } from './common/http-throttler.guard.js';
+import { LogsModule } from './common/logs.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
@@ -26,7 +29,13 @@ import { UsersModule } from './users/users.module.js';
         synchronize: process.env.NODE_ENV !== 'production',
       }),
     }),
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 10 }]),
+    // Límite general por IP; la app consulta el reproductor cada 2 s (30/min), así que
+    // hay margen de sobra. Los endpoints de auth tienen límites propios más bajos
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60_000, limit: 120 }],
+      errorMessage: 'Demasiadas peticiones seguidas. Espera un minuto y vuelve a intentarlo',
+    }),
+    LogsModule,
     AuthModule,
     UsersModule,
     EventsModule,
@@ -34,6 +43,6 @@ import { UsersModule } from './users/users.module.js';
     GatewayModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: HttpThrottlerGuard }],
 })
 export class AppModule {}

@@ -26,6 +26,18 @@ export class User {
   @Column({ default: false })
   isVerified: boolean;
 
+  // Contraseñas fallidas seguidas; al llegar al máximo la cuenta se bloquea un rato
+  @Column({ default: 0 })
+  failedLoginAttempts: number;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  lockedUntil: Date | null;
+
+  // Los access tokens emitidos antes de esta fecha dejan de valer
+  // (logout en todos los dispositivos, cambio de contraseña)
+  @Column({ type: 'timestamptz', nullable: true })
+  sessionsValidAfter: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 }

@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -10,11 +11,16 @@ export class ActionLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index()
   @Column({ type: 'varchar', nullable: true })
-  userId: string;
+  userId: string | null;
 
+  // Método + ruta con parámetros sin sustituir, p. ej. "POST /suggestions/:id/vote"
   @Column()
   action: string;
+
+  @Column({ name: 'status_code', type: 'int', nullable: true })
+  statusCode: number | null;
 
   @Column({ default: 'unknown' })
   platform: string;
@@ -25,6 +31,10 @@ export class ActionLog {
   @Column({ name: 'app_version', default: 'unknown' })
   appVersion: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  ip: string | null;
+
+  @Index()
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }

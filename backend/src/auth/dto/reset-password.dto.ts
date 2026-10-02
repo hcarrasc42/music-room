@@ -1,5 +1,6 @@
-import { IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, Matches, MinLength } from 'class-validator';
 export class ResetPasswordDto {
-  @IsString() token: string;
+  @IsEmail() email: string;
+  @Matches(/^\d{6}$/, { message: 'El código son 6 dígitos' }) code: string;
   @IsString() @MinLength(8) password: string;
 }

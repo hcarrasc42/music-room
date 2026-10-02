@@ -31,6 +31,8 @@ export class UsersService {
       id: userId,
       email: user?.email ?? '',
       username: user?.username ?? '',
+      // false si la cuenta se creó con Google: puede crear una sin dar la actual
+      hasPassword: !!user?.passwordHash,
       displayName: profile.displayName,
       avatarUrl: profile.avatarUrl,
       bio: profile.bio,

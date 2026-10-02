@@ -28,8 +28,23 @@ function setup() {
     console.log('→ Creado backend/.env desde .env.example');
     console.log('  ⚠ Rellena las claves de Spotify (y SMTP/Google si las usas).');
   }
+  ensureJwtSecret(envFile);
 }
 
-module.exports = { setup, run, root };
+// Sustituye el JWT_SECRET de ejemplo por uno aleatorio: con el secreto público
+// cualquiera podría firmar tokens válidos
+function ensureJwtSecret(envFile) {
+  const env = fs.readFileSync(envFile, 'utf8');
+  const current = env.match(/^JWT_SECRET=(.*)$/m)?.[1]?.trim();
+  if (current && current !== 'change_this_in_production' && current.length >= 32) return;
+  const secret = require('crypto').randomBytes(48).toString('hex');
+  const updated = current === undefined
+    ? `${env.trimEnd()}\nJWT_SECRET=${secret}\n`
+    : env.replace(/^JWT_SECRET=.*$/m, `JWT_SECRET=${secret}`);
+  fs.writeFileSync(envFile, updated);
+  console.log('→ Generado un JWT_SECRET aleatorio en backend/.env');
+}
+
+module.exports = { setup, run, root, ensureJwtSecret };
 
 if (require.main === module) setup();

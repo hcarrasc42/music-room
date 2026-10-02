@@ -48,7 +48,7 @@ export default function RegisterScreen({ navigation }: Props) {
         method: 'POST',
         body: JSON.stringify({ username, email: cleanEmail, password }),
       });
-      navigation.navigate('VerifyEmail', { email: cleanEmail, password });
+      navigation.navigate('VerifyEmail', { email: cleanEmail });
     } catch (e: any) {
       setError(Array.isArray(e.message) ? e.message.join('\n') : e.message ?? 'Error al registrarse');
     } finally {

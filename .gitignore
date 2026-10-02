@@ -33,3 +33,6 @@ coverage/
 # k6 output
 docs/load/*.json
 docs/load/*.csv
+
+# Ajustes locales de Claude Code
+.claude/settings.local.json

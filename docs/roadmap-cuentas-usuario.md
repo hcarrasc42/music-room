@@ -17,7 +17,7 @@ Leyenda: `[x]` hecho · `[ ]` pendiente · 🔴 obligatorio del subject · 🟡 
 | Recuperar contraseña con código | ✅ Funciona (probado) |
 | Perfil con visibilidad pública / amigos / privada | ✅ Backend y app (falta poder ver el perfil de otro) |
 | Amigos: buscar por @usuario, solicitudes, aceptar | ✅ Funciona |
-| Login con Google | ❌ El código existe, pero **nunca se ha configurado** (sin `GOOGLE_CLIENT_ID` ni en backend ni en la app) y en Expo Go no funciona tal cual |
+| Login con Google | ❌ El backend (`POST /auth/google` con ID token) existe, pero **nunca se ha configurado**, y en Expo Go no puede funcionar |
 | Vincular red social desde el perfil | ❌ No existe |
 | Spotify por usuario | ❌ Hoy hay **una sola cuenta de Spotify global** en `.env` (`SPOTIFY_REFRESH_TOKEN`) que usan todos los eventos |
 | URL del backend configurable | ✅ Desde el login (⚙️) y desde el perfil, con "Probar conexión" |
@@ -26,45 +26,37 @@ Leyenda: `[x]` hecho · `[ ]` pendiente · 🔴 obligatorio del subject · 🟡 
 
 ---
 
-## Decisión previa: cómo hacer OAuth (Google y Spotify) con Expo Go
+## Decisión previa: app Android propia, sin Expo Go
 
-**El problema.** El móvil habla con el backend por la IP de la wifi (`http://192.168.x.x:3000`). Ni Google ni Spotify aceptan esa dirección como *redirect URI*:
-- **Google:** solo acepta `https` con dominio público, o `localhost`.
-- **Spotify:** desde 2025 exige `https`; la única excepción es `http://127.0.0.1`. Además, los redirect URIs de Expo Go (`exp://192.168.x.x:8081`) cambian con cada red.
+Detalle y alternativas en [ADR 005](adr/005-autenticacion-social.md).
 
-**Opciones:**
+- **Plataforma:** la corrección será en **Android** (móvil o emulador), que el subject permite (IV.2: "Android o iOS").
+- **App propia:** se compila con `expo-dev-client` (`npx expo run:android`) en vez de usar Expo Go. Expo Go no admite SDKs nativos ni un esquema de URL propio.
+- **Google:** SDK nativo `@react-native-google-signin/google-signin`.
+  1. El selector de cuentas de Android devuelve un **ID token**.
+  2. La app lo envía a `POST /auth/google`.
+  3. El backend lo verifica contra `GOOGLE_CLIENT_ID` (cliente *Web*).
+  - Google reconoce la app por **paquete `com.echomusic.app` + SHA-1**. Sin túnel ni *redirect URIs*.
+- **Spotify:** autorización con **PKCE** y vuelta a `echomusic://spotify-auth`. La app manda el `code` al backend, que lo canjea con su secreto y guarda los tokens cifrados.
+- **Carpetas `android/` e `ios/`:** son generadas y **no se suben** a git.
 
-| | A. OAuth desde el backend + túnel HTTPS (**recomendada**) | B. Build de desarrollo con SDKs nativos |
-|---|---|---|
-| Cómo | La app abre el navegador en `https://<túnel>/auth/google/start`; el backend habla con Google/Spotify, guarda los tokens y devuelve a la app un código de un solo uso | `expo-dev-client` + `@react-native-google-signin` + esquema propio `musicroom://` |
-| ¿Sirve en Expo Go? | Sí | No, hay que compilar la app |
-| iPhone | Funciona sin cuenta de Apple Developer | Instalar en un iPhone físico necesita Mac + Xcode o cuenta de pago (99 $/año) |
-| Secretos | Todos en el backend (client secret de Spotify incluido) | Igual para Spotify |
-| Mismo mecanismo para Google y Spotify | Sí (un único flujo) | No (Google nativo, Spotify por navegador) |
-| Pega | Hay que tener el túnel levantado (ngrok, dominio estático gratis). En el plan gratuito, ngrok muestra una página de aviso la primera vez | Más configuración nativa; cada cambio nativo obliga a recompilar |
-
-**Recomendación: A.** Funciona con lo que ya usáis (Expo Go en iPhone) y resuelve Google y Spotify con el mismo código. Además, la URL del túnel sirve como URL del backend desde cualquier red, en la defensa incluida.
-
-Flujo A, paso a paso:
-1. La app llama a `WebBrowser.openAuthSessionAsync(${backend}/auth/{google|spotify}/start?mode=login|link&redirect=<Linking.createURL('auth')>)`.
-2. El backend genera un `state` aleatorio, guardado 10 min, con modo, usuario (si es `link`) y la URL de vuelta validada. Después redirige a Google o Spotify.
-3. Google o Spotify vuelven a `https://<túnel>/auth/{google|spotify}/callback?code&state`.
-4. El backend canjea el `code`, obtiene el perfil y crea, inicia sesión o vincula la cuenta. Después redirige a la app con `?ticket=<un solo uso, 60 s>`.
-5. La app canjea el ticket en `POST /auth/exchange` y recibe `access_token` y `refresh_token` (en modo `link`, solo un OK).
+> Primera versión de esta decisión: OAuth por el backend con túnel ngrok (para Expo Go en iPhone). Se cambió el mismo día al confirmar que la corrección es en Android.
 
 ---
 
-## Fase 0 — Preparación (sin código)
+## Fase 0 — Preparación
 
-- [ ] **Túnel HTTPS:** cuenta en ngrok, reservar el dominio estático gratuito y añadir `make tunnel` (o integrarlo en `make dev`).
-- [ ] **Google Cloud Console:**
-  - crear el proyecto y la pantalla de consentimiento (modo *Testing*, con los emails de los dos como usuarios de prueba)
-  - crear el cliente OAuth tipo *Web* con redirect `https://<túnel>/auth/google/callback`
-- [ ] **Spotify Developer Dashboard:**
-  - añadir el redirect `https://<túnel>/auth/spotify/callback`
-  - añadir en *User Management* las cuentas de Spotify que vayan a probar. En modo desarrollo solo pueden entrar los usuarios añadidos a mano y el cupo es pequeño; comprobad el límite actual.
-- [ ] **`.env.example`:** añadir `PUBLIC_URL`, `GOOGLE_CLIENT_SECRET` y `TOKEN_ENCRYPTION_KEY`, con instrucciones.
-- [ ] **Contrato con el compañero:** acordar el contrato Spotify ↔ eventos (ver la sección *Contrato con eventos* al final).
+- [x] **ADR 005** (app Android propia + Google Sign-In nativo) y guía paso a paso `docs/guia-android-google-spotify.md`.
+- [x] **`app.json`:** nombre `EchoMusic` y paquete Android `com.echomusic.app`. `android/` e `ios/` en `.gitignore`.
+- [x] **`.env`:** `TOKEN_ENCRYPTION_KEY` (para cifrar los tokens de Spotify). `make install` añade a un `.env` existente las variables que le falten y genera la clave.
+- [ ] **Android Studio (lo haces tú):** SDK en `D:DesarrolloAndroidSdk`, variables de entorno y emulador con imagen **Google Play** (guía, paso 1).
+- [ ] **Primera compilación de la app (juntos):** añadir `expo-dev-client` y `npx expo run:android` (guía, paso 2).
+- [x] **Google Cloud:** proyecto creado (como `MusicRoom`; el nombre interno da igual), consentimiento en *Testing* con usuarios de prueba, cliente **Web** (ID en `GOOGLE_CLIENT_ID` de `backend/.env`).
+- [ ] **Google Cloud, cliente Android** con `com.echomusic.app` + SHA-1 (necesita la primera compilación; guía, pasos 3–4).
+- [ ] **Google Cloud:** cambiar el **nombre de la app** en la pantalla de consentimiento a `EchoMusic` (es el que ve el usuario al entrar con Google).
+- [ ] **Spotify Dashboard (lo haces tú):** redirect `echomusic://spotify-auth` y cuentas en *User Management* (guía, paso 5).
+  - ⚠️ **Limitación de Spotify:** en *Development mode* solo pueden conectar su Spotify las cuentas añadidas a mano en *User Management*. El modo producción (*extended quota*) solo se concede a empresas, así que para el proyecto no es posible. El código permite a cualquiera conectar su cuenta, pero en la demo hay que usar cuentas añadidas (las vuestras o la del evaluador, añadida antes). Documentarlo en la defensa.
+- [ ] **Contrato con el compañero:** acordar el contrato Spotify ↔ eventos (sección *Contrato con eventos* al final).
 
 ---
 
@@ -94,16 +86,19 @@ Rápido y sin dependencias externas. Hacerlo primero.
 
 Obligatorio (V.1 + V.5: "registro con mail/contraseña **o** red social" y "autenticación vía red social en la app").
 
-- [ ] **Backend:**
-  - `GET /auth/google/start`, `GET /auth/google/callback` y `POST /auth/exchange` (flujo A)
-  - comprobar `email_verified` del perfil de Google: solo con email verificado se vincula a una cuenta existente con el mismo email
+- [ ] **Backend** (`POST /auth/google` ya existe; endurecerlo):
+  - comprobar `email_verified` del token: solo con email verificado se vincula a una cuenta existente con el mismo email
+  - normalizar el email a minúsculas
+  - identificar por `sub` de Google, no solo por email
+- [ ] **App:** `expo-dev-client` + `@react-native-google-signin/google-signin`; el ID del cliente Web llega a la app desde `backend/.env` vía `make dev`.
+- [ ] **APK para la corrección:** permitir HTTP al backend con `expo-build-properties` (`usesCleartextTraffic`) y documentar cómo generarlo.
 - [ ] **Usuario nuevo con Google:** se crea la cuenta y pasa a una pantalla corta de onboarding para elegir **nombre de usuario** (hoy recibe `usuario_123456` y no se entera).
 - [ ] **Si el email ya existe con contraseña:** se vincula y entra. El aviso "Hemos conectado Google a tu cuenta" sale una sola vez.
 - [ ] **App:** botón "Continuar con Google" (con el logo oficial y siguiendo las guías de marca de Google) en la bienvenida y en el login.
-- [ ] Quitar el flujo antiguo de `expo-auth-session/providers/google` y `POST /auth/google` con `idToken`, o dejarlo solo si se elige la opción B.
-- [ ] **Tests:** usuario nuevo, email existente verificado, email no verificado y `state` inválido o caducado.
+- [ ] Quitar el flujo antiguo de `expo-auth-session/providers/google` del login.
+- [ ] **Tests:** usuario nuevo, email existente verificado, email no verificado, token de otro cliente (audiencia incorrecta).
 
-**Hecho cuando:** desde Expo Go en el iPhone se puede crear cuenta con Google y volver a entrar con Google.
+**Hecho cuando:** en el emulador Android (y en un móvil Android) se puede crear cuenta con Google y volver a entrar con Google.
 
 ---
 
@@ -118,9 +113,10 @@ Cubre "un usuario registrado puede **vincular** su cuenta de red social" (V.1, �
   - `accessToken`, `refreshToken` y `expiresAt`, **cifrados en BD** (AES-256-GCM con `TOKEN_ENCRYPTION_KEY`)
   - `scopes`, `product` (`premium` | `free` | `open`), `checkedAt`
   - Sustituye a `User.googleId` (migrar el dato).
-- [ ] **Vincular:** `GET /auth/{provider}/start?mode=link` (requiere sesión; el `state` guarda el `userId`).
+- [ ] **Vincular Google:** `POST /users/me/accounts/google` con ID token (requiere sesión).
+- [ ] **Vincular Spotify:** `POST /users/me/accounts/spotify` con `code` + `code_verifier` (PKCE); el backend lo canjea y guarda los tokens cifrados.
 - [ ] **Desvincular:** `DELETE /users/me/accounts/:provider`. Si es tu único método de entrada (no tienes contraseña), se rechaza.
-- [ ] **Errores:** si esa cuenta de Spotify o de Google ya está vinculada a **otro** usuario de MusicRoom, error claro; nunca se mueve sola.
+- [ ] **Errores:** si esa cuenta de Spotify o de Google ya está vinculada a **otro** usuario de EchoMusic, error claro; nunca se mueve sola.
 - [ ] **Scopes de Spotify, pedidos todos de una vez:**
   - `user-read-email` y `user-read-private` (para saber si es Premium)
   - `user-read-playback-state`, `user-modify-playback-state` y `user-read-currently-playing`
@@ -153,7 +149,7 @@ Cubre "un usuario registrado puede **vincular** su cuenta de red social" (V.1, �
 
 **Opinión: buena idea, pero después de las fases 2 y 3.** No es obligatoria (el subject pide Facebook **o** Google), pero encaja con la app: casi todo el que la use tiene Spotify, y quien entra con Spotify Premium puede crear eventos sin pasos extra. Además, con la Fase 3 hecha cuesta poco, porque reutiliza todo el flujo OAuth.
 
-- [ ] **`GET /auth/spotify/start?mode=login`:**
+- [ ] **`POST /auth/spotify`** (con `code` + `code_verifier`):
   - si `providerUserId` existe, entra
   - si no, crea la cuenta y lleva al onboarding de nombre de usuario
 - [ ] ⚠️ **Seguridad:** Spotify **no garantiza** que el email esté verificado.
@@ -192,7 +188,8 @@ Propuestas para que sea más cómoda, intuitiva y atractiva, ordenadas por impac
   - "Ya tengo cuenta"
   - icono ⚙️ con la URL del backend
 - [ ] **Splash screen** con `expo-splash-screen`, en vez de un spinner en negro.
-- [ ] **`app.json`:** nombre `MusicRoom` (hoy es `mobile`), icono propio y `userInterfaceStyle: "dark"` (la UI ya es oscura).
+- [x] **`app.json`:** nombre `EchoMusic`, paquete `com.echomusic.app`, esquema `echomusic://`.
+- [ ] **`app.json`:** icono propio y `userInterfaceStyle: "dark"` (la UI ya es oscura).
 - [ ] **Onboarding tras registrarse**, 3 pasos que se pueden saltar: nombre de usuario y foto → gustos musicales → conectar Spotify.
 
 **Formularios**
@@ -212,7 +209,7 @@ Propuestas para que sea más cómoda, intuitiva y atractiva, ordenadas por impac
 **Amigos**
 - [ ] **Badge en la pestaña Amigos** con las solicitudes pendientes.
 - [ ] **Tocar un amigo abre su perfil** (Fase 5).
-- [ ] 🟢 **Añadir amigo por QR**: tu QR en el perfil y un escáner en Amigos (`musicroom://u/<username>`).
+- [ ] 🟢 **Añadir amigo por QR**: tu QR en el perfil y un escáner en Amigos (`echomusic://u/<username>`).
 
 ---
 
@@ -263,10 +260,14 @@ isPremium(userId: string): Promise<boolean>       // vuelve a comprobarlo si che
 
 ## Orden recomendado
 
-1. **Fase 1:** obligatorios rápidos, sin dependencias.
-2. **Fase 0:** túnel y consolas, en paralelo con la 1.
-3. **Fase 2:** Google, que es obligatorio.
-4. **Fase 3:** cuentas conectadas y Spotify Premium; desbloquea al compañero.
-5. **Fase 5:** solo los puntos 🔴 del perfil.
-6. **Fase 7:** docs, tests y Swagger de lo hecho hasta aquí.
-7. Con lo obligatorio cerrado: **Fase 4** (Spotify login), **Fase 6** y el resto de la 5.
+Se sigue desarrollando con **Expo Go** (más cómodo). La app Android propia se compila **justo antes de probar Google y Spotify**, que son lo único que Expo Go no puede ejecutar. No se deja para el final, para descubrir con margen cualquier problema nativo.
+
+1. ✅ **Fase 1:** obligatorios rápidos.
+2. **Fase 0:** consolas ✅ Google Cloud (cliente Web), ⬜ Spotify Dashboard.
+3. **En Expo Go:**
+   - **Fase 5:** puntos 🔴 del perfil (ver el perfil de otro usuario, tres niveles claros).
+   - **Fases 2 y 3, parte de backend:** endurecer `POST /auth/google`, `LinkedAccount`, tokens cifrados, Premium. Se comprueban con tests.
+4. **Migración a app Android:** Android Studio + emulador, `expo-dev-client`, primera compilación, cliente Android de Google con SHA-1.
+5. **Fases 2 y 3, parte de app:** botón de Google nativo y conectar Spotify, probados en el emulador. Esto desbloquea al compañero.
+6. **Fase 7:** docs, tests y Swagger de lo hecho.
+7. Con lo obligatorio cerrado: **Fase 4** (login con Spotify), **Fase 6** y el resto de la 5.

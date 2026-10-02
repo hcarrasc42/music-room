@@ -20,6 +20,14 @@ JWT de corta duración (15 min) + refresh token rotatorio almacenado hasheado en
 - El cliente debe implementar lógica de refresco transparente.
 - Revocar todos los tokens de un usuario requiere una tabla de refresh tokens (ya incluida en el esquema).
 
+## Actualización 2026-10-02 — Revocación inmediata
+El punto "sin estado en servidor para los access tokens" se ha matizado. Cada petición autenticada consulta `users.sessionsValidAfter`, y los access tokens emitidos antes de esa fecha se rechazan.
+
+Se actualiza en tres casos: "cerrar sesión en todos los dispositivos", cambio de contraseña y recuperación de contraseña.
+
+- **Coste:** una lectura por clave primaria por petición.
+- **Ganancia:** una sesión robada se corta al momento, en vez de seguir viva hasta 15 minutos.
+
 ## Decisión — Sondeo de reproducción
 El backend consulta `GET /v1/me/player` cada 3 segundos mientras hay un evento en vivo. Cuando `progress_ms / duration_ms > 0.95`, extrae la pista más votada de la cola, la marca como `playing` y emite el cambio por WebSocket.
 

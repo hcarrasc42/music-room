@@ -89,7 +89,7 @@ export default function LoginScreen({ navigation }: Props) {
   return (
     <View style={s.screen}>
       <KeyboardScrollView style={s.screen} contentContainerStyle={s.container}>
-        <Text style={s.title}>🎵 Music Room</Text>
+        <Text style={s.title}>🎵 EchoMusic</Text>
         <Text style={s.subtitle}>Music, Collaboration &amp; Mobility</Text>
 
         <TextInput style={s.input} placeholder="Email" placeholderTextColor="#888"

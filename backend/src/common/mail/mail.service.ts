@@ -26,14 +26,14 @@ export class MailService {
 
   sendVerificationEmail(to: string, code: string): Promise<void> {
     return this.sendCode(to, code, {
-      subject: `${code} es tu código de verificación de MusicRoom`,
+      subject: `${code} es tu código de verificación de EchoMusic`,
       intro: 'Para activar tu cuenta, introduce este código en la app:',
     });
   }
 
   sendPasswordResetEmail(to: string, code: string): Promise<void> {
     return this.sendCode(to, code, {
-      subject: `${code} es tu código para cambiar la contraseña de MusicRoom`,
+      subject: `${code} es tu código para cambiar la contraseña de EchoMusic`,
       intro: 'Para elegir una contraseña nueva, introduce este código en la app:',
     });
   }
@@ -53,7 +53,7 @@ export class MailService {
       text: `${intro}\n\n${spaced}\n\n${outro}`,
       html: `
         <div style="font-family:Arial,sans-serif;max-width:420px;margin:auto;padding:24px;color:#222">
-          <h2 style="margin:0 0 16px">🎵 MusicRoom</h2>
+          <h2 style="margin:0 0 16px">🎵 EchoMusic</h2>
           <p>${intro}</p>
           <p style="font-size:34px;font-weight:bold;letter-spacing:8px;text-align:center;
                     background:#f2f2f2;border-radius:8px;padding:16px;margin:24px 0">${spaced}</p>
